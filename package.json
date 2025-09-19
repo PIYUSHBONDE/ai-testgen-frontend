@@ -12,11 +12,17 @@
     "tailwind:watch": "tailwindcss -i ./src/index.css -o ./dist/tailwind.css --watch"
   },
   "dependencies": {
+    "@google-cloud/bigquery": "^8.1.1",
     "@radix-ui/react-dialog": "^1.1.15",
     "@tailwindcss/postcss": "^4.1.13",
     "@tailwindcss/vite": "^4.1.13",
+    "firebase": "^12.3.0",
+    "firebase-admin": "^13.5.0",
+    "firebase-functions": "^6.4.0",
     "framer-motion": "^12.23.15",
+    "google-auth-library": "^10.3.0",
     "lucide-react": "^0.544.0",
+    "node-fetch": "^3.3.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },

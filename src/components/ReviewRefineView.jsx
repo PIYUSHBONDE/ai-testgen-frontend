@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import { Card, Button } from './ui'
+import { httpsCallable } from 'firebase/functions'
+import { functions } from '../firebase'
 import { BadgeCheck, Clock, MessageSquare } from 'lucide-react'
 
 function Navigator({ tests, onSelect, filter, setFilter }) {
@@ -84,9 +86,27 @@ function CoPilot({ onSuggest }) {
     setHistory(h => [...h, msg])
     setInput('')
     setTimeout(() => {
+      // simulate ai suggestion then also attempt calling backend callable if available
       const suggestion = { id: Date.now()+1, from: 'ai', text: 'Suggestion: add step to validate sensor warmup.' }
       setHistory(h => [...h, suggestion])
       onSuggest && onSuggest(suggestion)
+
+      // demo callable function invocation (if functions configured)
+      try {
+        const callable = httpsCallable(functions, 'callVertexAgent')
+        callable({ text: input, requirementId: selected?.trace || null })
+          .then(res => {
+            const aiText = res.data && res.data.agentResponse ? JSON.stringify(res.data.agentResponse).slice(0,300) : 'AI: no response'
+            const remote = { id: Date.now()+2, from: 'ai', text: `Remote AI: ${aiText}` }
+            setHistory(h => [...h, remote])
+          })
+          .catch(err => {
+            const errMsg = { id: Date.now()+3, from: 'ai', text: `Remote AI error: ${err.message}` }
+            setHistory(h => [...h, errMsg])
+          })
+      } catch (e) {
+        // not configured or firebase not initialized; ignore
+      }
     }, 900)
   }
 
