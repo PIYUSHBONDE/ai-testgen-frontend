@@ -2,14 +2,26 @@ import React, { useState } from 'react'
 import Dialog from './ui/Dialog'
 import { Button, Card } from './ui'
 import { Check, DownloadCloud, FileText } from 'lucide-react'
+import { useTests } from '../context/TestContext'
+import { jsPDF } from "jspdf";
 
 export default function ExportModal({ open, onOpenChange = () => {} }) {
-  const [targets, setTargets] = useState({ json: true, csv: false, bigquery: false })
+  const [targets, setTargets] = useState({ json: true, pdf: false })
   const [progress, setProgress] = useState(null) // null | number | 'done'
+  const { tests } = useTests();
 
   function toggleTarget(key) {
     setTargets((t) => ({ ...t, [key]: !t[key] }))
   }
+
+  const handleExport = () => {
+    const doc = new jsPDF();
+    if(tests.length === 0) return;
+    const jsonString = JSON.stringify(tests[0], null, 2);
+    const lines = doc.splitTextToSize(jsonString, 180);
+    doc.text(lines, 10, 10);
+    doc.save("exported-data.pdf");
+  };
 
   async function doExport() {
     setProgress(0)
@@ -26,6 +38,8 @@ export default function ExportModal({ open, onOpenChange = () => {} }) {
       setProgress(null)
       onOpenChange(false)
     }, 900)
+    console.log('Exporting to:', tests[0]);
+    handleExport();
   }
 
   return (

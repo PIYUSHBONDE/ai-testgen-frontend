@@ -12,7 +12,7 @@ export default function Navbar({ step = 1, onExport = () => {} }) {
     else root.classList.remove('dark')
   }, [dark])
 
-  const steps = ['Upload', 'Input', 'Refine']
+  const steps = ['Upload', 'Input', 'Refine', 'Export']
 
   return (
     <header className="w-full flex items-center justify-between py-4 px-6 bg-gradient-to-b from-white/50 to-white/10 dark:from-slate-900/80 dark:to-transparent">
@@ -41,10 +41,6 @@ export default function Navbar({ step = 1, onExport = () => {} }) {
         <Button onClick={onExport} className="flex items-center gap-2 bg-emerald-600">
           <DownloadCloud size={16} />
           Export
-        </Button>
-        <Button className="flex items-center gap-2 bg-indigo-600">
-          <ShieldCheck size={16} />
-          Compliance Mode
         </Button>
         <IconButton onClick={() => setDark(!dark)}>
           <Sun size={16} />

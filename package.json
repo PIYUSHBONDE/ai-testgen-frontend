@@ -22,6 +22,7 @@
     "firebase-functions": "^6.4.0",
     "framer-motion": "^12.23.15",
     "google-auth-library": "^10.3.0",
+    "jspdf": "^3.0.3",
     "lucide-react": "^0.544.0",
     "node-fetch": "^3.3.2",
     "react": "^19.1.1",

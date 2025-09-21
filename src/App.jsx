@@ -11,6 +11,14 @@ import RunTestsForm from "./components/RunTestForm";
 function App() {
   const [step, setStep] = useState(1);
 
+  const handleExport = () => {
+    const doc = new jsPDF();
+    const jsonString = JSON.stringify(jsonData, null, 2);
+    const lines = doc.splitTextToSize(jsonString, 180);
+    doc.text(lines, 10, 10);
+    doc.save("exported-data.pdf");
+  };
+
   const goNext = () => setStep((s) => Math.min(4, s + 1));
   const goBack = () => setStep((s) => Math.max(1, s - 1));
 
