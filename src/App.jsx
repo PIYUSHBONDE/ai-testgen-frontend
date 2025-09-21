@@ -7,7 +7,7 @@ import ReviewRefineView from './components/ReviewRefineView'
 import ExportModal from './components/ExportModal'
 
 function App() {
-  const [step, setStep] = useState(4)
+  const [step, setStep] = useState(1)
 
   const goNext = () => setStep((s) => Math.min(4, s+1))
   const goBack = () => setStep((s) => Math.max(1, s-1))

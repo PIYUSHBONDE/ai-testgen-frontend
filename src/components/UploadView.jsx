@@ -1,7 +1,8 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useRef  } from 'react'
 import { CloudUpload, File, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, Button, Alert, IconButton } from './ui'
+import { uploadFile, runAgent } from '../api'
 
 const ProgressStep = ({ label, active }) => (
   <div className={`flex items-center gap-3 ${active ? 'text-emerald-600' : 'text-slate-500'}`}>
@@ -11,21 +12,48 @@ const ProgressStep = ({ label, active }) => (
 )
 
 export default function UploadView({ onNext }) {
+  const fileInputRef = useRef(null);
   const [state, setState] = useState('idle') // idle | uploading | analyzing | extracting | grouping | done
   const [recent] = useState([
     { id: 1, name: 'ECG Report Analysis', when: '2 days ago' },
     { id: 2, name: 'MRI Safety Checks', when: '1 week ago' },
   ])
 
-  const onDrop = useCallback((e) => {
-    e.preventDefault()
-    setState('uploading')
-    // simulate progress
-    setTimeout(() => setState('analyzing'), 1200)
-    setTimeout(() => setState('extracting'), 2800)
-    setTimeout(() => setState('grouping'), 4200)
-    setTimeout(() => setState('done'), 5600)
-  }, [])
+  const onDrop = useCallback(async (e) => {
+  e.preventDefault()
+  setState('uploading')
+
+  const files = e.dataTransfer?.files || e.target?.dataTransfer
+  if (!files || files.length === 0) return
+
+  try {
+    const uploadRes = await uploadFile('test_user', '8163984337155391488', files[0]);
+    console.log("Upload response:", uploadRes);
+
+    if (uploadRes.status !== 'success') {
+      throw new Error(uploadRes.detail || 'Upload failed');
+    }
+
+    setState('analyzing');
+
+    // Step 2: Call runAgent with gs_url
+    const message = `Please add this document to the Requirements Corpus: ${uploadRes.gs_url}`;
+    const agentRes = await runAgent('test_user', '8163984337155391488', message);
+
+    console.log("Agent response:", agentRes);
+
+
+    // Simulate progress like before
+    setTimeout(() => setState('extracting'), 1200)
+    setTimeout(() => setState('grouping'), 2400)
+    setTimeout(() => setState('done'), 3600)
+  } catch (err) {
+    console.error(err)
+    setState('idle')
+    alert('File upload failed')
+  }
+}, [])
+
 
   return (
     <div className="p-6">
@@ -66,15 +94,22 @@ export default function UploadView({ onNext }) {
 
             <div className="mt-3">
               <input
+                ref={fileInputRef}
                 id="file-upload"
                 type="file"
                 className="hidden"
                 onChange={(e) =>
-                  onDrop({ preventDefault: () => {}, dataTransfer: e.target.files })
+                  onDrop({ preventDefault: () => {}, dataTransfer: { files: e.target.files } })
                 }
               />
               <label htmlFor="file-upload">
-                <Button as="span">Browse Files</Button>
+                <Button
+                  onClick={() => {
+                    fileInputRef.current?.click();
+                  }}
+                >
+                  Browse Files
+                </Button>
               </label>
             </div>
           </div>
