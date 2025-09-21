@@ -12,7 +12,7 @@ export default function Navbar({ step = 1, onExport = () => {} }) {
     else root.classList.remove('dark')
   }, [dark])
 
-  const steps = ['Upload', 'Features', 'Refine', 'Export']
+  const steps = ['Upload', 'Input', 'Refine']
 
   return (
     <header className="w-full flex items-center justify-between py-4 px-6 bg-gradient-to-b from-white/50 to-white/10 dark:from-slate-900/80 dark:to-transparent">

@@ -3,6 +3,7 @@ import { Card, Button } from './ui'
 import { httpsCallable } from 'firebase/functions'
 import { functions } from '../firebase'
 import { BadgeCheck, Clock, MessageSquare } from 'lucide-react'
+import { useTests } from '../context/TestContext'
 
 function Navigator({ tests, onSelect, filter, setFilter }) {
   return (
@@ -23,7 +24,6 @@ function Navigator({ tests, onSelect, filter, setFilter }) {
         {tests.filter(t => filter==='all' ? true : t.priority === filter).map(t => (
           <div key={t.id} onClick={() => onSelect(t)} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/40 cursor-pointer">
             <div className="font-medium">{t.title}</div>
-            <div className="text-xs text-slate-500">{t.priority.toUpperCase()}</div>
           </div>
         ))}
       </div>
@@ -32,46 +32,94 @@ function Navigator({ tests, onSelect, filter, setFilter }) {
 }
 
 function DetailView({ test, onEdit }) {
-  if (!test) return <div className="p-6 text-slate-500">Select a test case to view details</div>
+  if (!test) {
+    return (
+      <div className="p-6 text-white">
+        Select a test case to view details
+      </div>
+    );
+  }
+
+  const {
+    id,
+    title,
+    preconditions = [],
+    steps = [],
+    expected,
+    risk,
+    regulatory_refs = [],
+    rationale,
+  } = test || {};
+
+  // Remove any "1. " prefixes so <ol> renders clean numbering
+  const normalizedSteps = steps.map((s) => s.replace(/^\s*\d+\.\s*/, ""));
 
   return (
-    <div className="p-6">
+    <div className="p-6 text-white bg-slate-900">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-xl font-semibold">{test.title}</h3>
-          <div className="text-sm text-slate-500">Priority: {test.priority}</div>
+          <h3 className="text-xl font-semibold text-white">{title}</h3>
+          <div className="text-sm text-white">Risk: {risk || "—"}</div>
+          <div className="text-xs text-white">ID: {id || "—"}</div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="text-xs px-2 py-1 rounded-full bg-emerald-600 text-white flex items-center gap-2"><BadgeCheck size={14}/> FDA</div>
-          <div className="text-xs px-2 py-1 rounded-full bg-slate-700 text-white flex items-center gap-2"><Clock size={14}/> ISO</div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {regulatory_refs.map((ref, i) => (
+            <div
+              key={`${ref}-${i}`}
+              className="text-xs px-2 py-1 rounded-full bg-slate-700 text-white flex items-center gap-2"
+            >
+              <BadgeCheck size={14} />
+              {ref}
+            </div>
+          ))}
         </div>
       </div>
 
-      <Card>
-        <div className="mb-3 font-medium">Steps</div>
+      <Card className="bg-slate-800 border border-slate-700 text-white">
+        {preconditions.length > 0 && (
+          <div className="mb-4">
+            <div className="mb-2 font-medium text-white">Preconditions</div>
+            <ul className="list-disc ml-5 space-y-2 text-sm text-white">
+              {preconditions.map((p, i) => (
+                <li key={`pre-${i}`}>{p}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="mb-3 font-medium text-white">Steps</div>
         <ol className="list-decimal ml-5 space-y-2 text-sm">
-          {test.steps.map((s, i) => (
-            <li key={i}>{s}</li>
+          {normalizedSteps.map((s, i) => (
+            <li key={`step-${i}`} className="text-white font-semibold">
+              {s}
+            </li>
           ))}
         </ol>
 
-        <div className="mt-4">
-          <div className="font-medium">Expected Result</div>
-          <div className="text-sm text-slate-600 mt-1">{test.expected}</div>
-        </div>
+        {expected && (
+          <div className="mt-4">
+            <div className="font-medium text-white">Expected Result</div>
+            <div className="text-sm text-white mt-1">{expected}</div>
+          </div>
+        )}
 
-        <div className="mt-4">
-          <div className="font-medium">Traceability</div>
-          <div className="text-sm text-slate-600 mt-1">Linked requirements: {test.trace}</div>
-        </div>
+        {rationale && (
+          <div className="mt-4">
+            <div className="font-medium text-white">Rationale</div>
+            <div className="text-sm text-white mt-1">{rationale}</div>
+          </div>
+        )}
 
         <div className="mt-4 flex gap-2">
-          <Button variant="secondary" onClick={() => onEdit(test)}>Edit</Button>
+          <Button variant="secondary" onClick={() => onEdit(test)}>
+            Edit
+          </Button>
           <Button variant="ghost">Audit Trail</Button>
         </div>
       </Card>
     </div>
-  )
+  );
 }
 
 function CoPilot({ onSuggest }) {
@@ -132,10 +180,32 @@ function CoPilot({ onSuggest }) {
 }
 
 export default function ReviewRefineView({ onBack }) {
-  const [tests, setTests] = useState([
-    { id: 't1', title: 'Detect Heart Rate', priority: 'high', steps: ['Connect sensor', 'Start recording', 'Process signal'], expected: 'Heart rate value displayed', trace: 'REQ-1' },
-    { id: 't2', title: 'Battery Safety', priority: 'medium', steps: ['Check voltage', 'Run discharge'], expected: 'No overheating', trace: 'REQ-5' },
-  ])
+  // const [tests, setTests] = useState([
+  //   {
+  //        "id":"TC-LAB-001",
+  //        "title":"Create and Place a New Laboratory Order",
+  //        "preconditions":[
+  //           "A clinician is logged into the system.",
+  //           "A patient record is open."
+  //        ],
+  //        "steps":[
+  //           "1. Navigate to the 'Laboratory Orders' section for the patient.",
+  //           "2. Select a diagnostic test from the available list.",
+  //           "3. Fill in any required information for the order (e.g., diagnosis code, notes).",
+  //           "4. Click 'Submit' or 'Place Order'.",
+  //           "5. Verify that the system confirms the order has been placed successfully.",
+  //           "6. Check the patient's record to ensure the new lab order is listed in their order history."
+  //        ],
+  //        "expected":"The system must allow a clinician to successfully order a diagnostic test for a patient, and the order must be recorded in the patient's history.",
+  //        "risk":"high",
+  //        "regulatory_refs":[
+  //           "IEC 62304",
+  //           "sample_healthcare_requirements.txt"
+  //        ],
+  //        "rationale":"This test validates the core functionality of the laboratory ordering feature. A failure here would mean clinicians cannot order necessary tests, directly impacting patient care."
+  //     },    { id: 't2', title: 'Battery Safety', priority: 'medium', steps: ['Check voltage', 'Run discharge'], expected: 'No overheating', trace: 'REQ-5' },
+  // ])
+  const { tests } = useTests();
   const [selected, setSelected] = useState(tests[0])
   const [filter, setFilter] = useState('all')
 
