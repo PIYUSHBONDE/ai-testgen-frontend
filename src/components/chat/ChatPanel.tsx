@@ -1,7 +1,7 @@
-import React, { useRef, useEffect } from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Trash2, Edit2, Download, Copy, RefreshCcw, Bot, User, Loader2 } from 'lucide-react'
+import { Trash2, Edit2, Download, Copy, RefreshCcw, Bot, User, Loader2 , Check, X} from 'lucide-react'
 import { Card } from '../ui'
 import { format } from 'date-fns';
 import TestCasesMessage from '../TestCaseMessage'
@@ -14,34 +14,78 @@ export type Message = {
   testcases?: any[]; // Add this optional property
 }
 
+export type Conversation = {
+  id: string;
+  title: string;
+  updatedAt: string;
+  // It's good practice for this object to also contain its messages
+  messages?: Message[];
+};
+
 export default function ChatPanel({
-  conversationTitle,
+  conversation,
   messages,
   isLoading,
   isAgentThinking,
+  onRename
 }: {
-  conversationTitle: string
+  conversation: Conversation | null;
   messages: Message[];
   isLoading: boolean;
   isAgentThinking: boolean;
+  onRename: (sessionId: string, newTitle: string) => Promise<void>;
 }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempTitle, setTempTitle] = useState(conversation?.title || '');
   const endRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isAgentThinking])
 
+  useEffect(() => {
+    setTempTitle(conversation?.title || '');
+  }, [conversation]);
+
+  const handleSaveRename = () => {
+    if (conversation && tempTitle.trim() && tempTitle !== conversation.title) {
+      onRename(conversation.id, tempTitle.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancelRename = () => {
+    setTempTitle(conversation?.title || '');
+    setIsEditing(false);
+  };
   
 
   return (
     <div className="absolute inset-0 flex flex-col h-full">
       <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between flex-shrink-0">
-        <div className="font-semibold text-slate-900 dark:text-slate-100">{conversationTitle}</div>
-        <div className="flex items-center gap-3 text-slate-500">
-          <button title="Rename" className="hover:text-slate-800 dark:hover:text-slate-200"><Edit2 size={16} /></button>
-          <button title="Download" className="hover:text-slate-800 dark:hover:text-slate-200"><Download size={16} /></button>
-          <button title="Delete" className="hover:text-red-500"><Trash2 size={16} /></button>
-        </div>
+        {isEditing ? (
+          <div className="flex items-center gap-2 w-full">
+            <input 
+              type="text"
+              value={tempTitle}
+              onChange={(e) => setTempTitle(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveRename(); if (e.key === 'Escape') handleCancelRename(); }}
+              className="flex-1 bg-transparent rounded-md p-1 -m-1 font-semibold text-slate-900 dark:text-slate-100 outline-none ring-2 ring-emerald-500"
+              autoFocus
+            />
+            <button onClick={handleSaveRename} className="p-1 text-emerald-500 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-md"><Check size={18} /></button>
+            <button onClick={handleCancelRename} className="p-1 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md"><X size={18} /></button>
+          </div>
+        ) : (
+          <>
+            <div className="font-semibold text-slate-900 dark:text-slate-100">{conversation?.title}</div>
+            <div className="flex items-center gap-3 text-slate-500">
+              <button onClick={() => setIsEditing(true)} title="Rename" className="hover:text-slate-800 dark:hover:text-slate-200"><Edit2 size={16} /></button>
+              <button title="Download" className="hover:text-slate-800 dark:hover:text-slate-200"><Download size={16} /></button>
+              <button title="Delete" className="hover:text-red-500"><Trash2 size={16} /></button>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="flex-1 scrollbar-hide overflow-auto p-6 space-y-6 pb-32">

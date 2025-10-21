@@ -58,3 +58,11 @@ export async function fetchMessages(userId, sessionId) {
   });
   return res.data.messages; // Expected: an array of message objects
 }
+
+export async function renameConversation(userId, sessionId, newTitle) {
+  const res = await axios.patch(`${API_BASE}/sessions/${sessionId}/title`, 
+    { new_title: newTitle },
+    { params: { user_id: userId } }
+  );
+  return res.data;
+}

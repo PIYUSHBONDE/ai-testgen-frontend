@@ -3,7 +3,7 @@ import Sidebar, { Project, Conversation } from './Sidebar'
 import ChatPanel, { Message } from './ChatPanel'
 import MessageInput from './MessageInput'
 import { useAuth } from '../../context/AuthContext'
-import { fetchSessions, createNewSession, sendMessage, fetchMessages} from '../../api';
+import { fetchSessions, createNewSession, sendMessage, fetchMessages, renameConversation} from '../../api';
 
 // const mockProjects: Project[] = [
 //   {
@@ -136,8 +136,15 @@ export default function ChatWorkspace() {
       setConversations(prev => {
         const currentConv = prev.find(conv => conv.id === selectedConversationId);
         if (!currentConv) return prev;
+
+        const updatedConv = { 
+          ...currentConv, 
+          title: aiResponse.updated_title || currentConv.title,
+          updatedAt: new Date().toISOString() 
+        };
+
         const otherConvs = prev.filter(conv => conv.id !== selectedConversationId);
-        return [{ ...currentConv, updatedAt: new Date().toISOString() }, ...otherConvs];
+        return [updatedConv, ...otherConvs];
       });
 
     } catch (error) {
@@ -159,6 +166,21 @@ export default function ChatWorkspace() {
   //     return <div>Loading conversations...</div>
   // }
 
+  const handleRenameConversation = async (sessionId: string, newTitle: string) => {
+    try {
+      await renameConversation(user.uid, sessionId, newTitle);
+      // Update the title in the local state to instantly reflect the change
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === sessionId ? { ...conv, title: newTitle } : conv
+        )
+      );
+    } catch (error) {
+      console.error("Failed to rename conversation:", error);
+      // Optionally show an error toast
+    }
+  };
+
   return (
     <div className="flex h-screen bg-transparent text-slate-900 dark:text-slate-100">
       <Sidebar 
@@ -173,10 +195,11 @@ export default function ChatWorkspace() {
 
       <div className="flex-1 relative">
         <ChatPanel 
-          conversationTitle={activeConversation?.title || 'Select or start a new conversation'}
+          conversation={activeConversation}
           messages={messages} 
           isLoading={isLoadingMessages}
           isAgentThinking={isAgentThinking}
+          onRename={handleRenameConversation}
         />
         <MessageInput 
           onSend={handleSend}
