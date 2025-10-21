@@ -211,7 +211,7 @@ export default function ReviewRefineView({ onBack }) {
 
   const handleSuggest = (sugg) => {
     // attach suggestion as a note on selected test (mock)
-    console.log('AI suggestion', sugg)
+    // console.log('AI suggestion', sugg)
   }
 
   return (

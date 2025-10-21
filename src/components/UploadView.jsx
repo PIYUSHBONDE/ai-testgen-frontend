@@ -3,7 +3,6 @@ import { CloudUpload, File, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, Button, Alert, IconButton } from "./ui";
 import { uploadFile, runAgent } from "../api";
-import TestCaseCard from "./TestcaseCard";
 import MessageCard from "./MessageCard";
 
 const ProgressStep = ({ label, active }) => (
@@ -23,7 +22,7 @@ const ProgressStep = ({ label, active }) => (
 
 export default function UploadView({ onNext }) {
   const fileInputRef = useRef(null);
-  const [state, setState] = useState("done"); // idle | uploading | analyzing | extracting | grouping | done
+  const [state, setState] = useState("idle"); // idle | uploading | analyzing | extracting | grouping | done
   const [recent] = useState([
     { id: 1, name: "ECG Report Analysis", when: "2 days ago" },
     { id: 2, name: "MRI Safety Checks", when: "1 week ago" },
@@ -123,7 +122,7 @@ export default function UploadView({ onNext }) {
         "8163984337155391488",
         files[0]
       );
-      console.log("Upload response:", uploadRes);
+      // console.log("Upload response:", uploadRes);
 
       if (uploadRes.status !== "success") {
         throw new Error(uploadRes.detail || "Upload failed");
@@ -139,7 +138,7 @@ export default function UploadView({ onNext }) {
         message
       );
 
-      console.log("Agent response:", agentRes);
+      // console.log("Agent response:", agentRes);
 
       // Simulate progress like before
       setTimeout(() => setState("extracting"), 1200);

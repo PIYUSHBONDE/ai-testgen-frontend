@@ -40,3 +40,6 @@ dist-ssr/
 
 # Mac/Windows system files
 Thumbs.db
+
+# Local environment variables
+.env.local

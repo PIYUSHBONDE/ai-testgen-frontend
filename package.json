@@ -17,7 +17,8 @@
     "@tailwindcss/postcss": "^4.1.13",
     "@tailwindcss/vite": "^4.1.13",
     "axios": "^1.12.2",
-    "firebase": "^12.3.0",
+    "date-fns": "^4.1.0",
+    "firebase": "^12.4.0",
     "firebase-admin": "^13.5.0",
     "firebase-functions": "^6.4.0",
     "framer-motion": "^12.23.15",
@@ -26,7 +27,9 @@
     "lucide-react": "^0.544.0",
     "node-fetch": "^3.3.2",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "react-dropzone": "^14.3.8",
+    "react-markdown": "^8.0.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
@@ -40,6 +43,7 @@
     "globals": "^16.4.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.13",
+    "typescript": "^5.9.3",
     "vite": "^7.1.6"
   }
 }

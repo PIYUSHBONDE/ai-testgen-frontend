@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useTests } from "../context/TestContext";
+import { runAgent } from "../api";
+
 
 
 export default function CenteredRunTestsForm({onGenerate, onBack}) {
@@ -21,57 +23,20 @@ export default function CenteredRunTestsForm({onGenerate, onBack}) {
     }
 
     try {
-    //   const res = await fetch(BACKEND_API+"/api/run", {
-    //     method: "POST",
-    //     headers: { "Content-Type": "application/json" },
-    //     body: JSON.stringify(payload),
-    //   });
+      const res = await runAgent("test_user","8163984337155391488",value);
+      // console.log("Response:", res);
 
-    //   const contentType = res.headers.get("content-type") || "";
-    //   if (!res.ok) {
-    //     const errText = contentType.includes("application/json")
-    //       ? (await res.json())?.error || res.statusText
-    //       : await res.text();
-    //     throw new Error(errText || `Request failed with status ${res.status}`);
-    //   }
+      onGenerate();
+      // Safely extract testcases
+      let testcases = [];
+      if (res.agentResponse) {
+        const parsed = res.agentResponse.find(r => r.parsed_testcases);
+        if (parsed && parsed.parsed_testcases && parsed.parsed_testcases.testcases) {
+          testcases = parsed.parsed_testcases.testcases;
+        }
+      }
 
-    //   const data = contentType.includes("application/json")
-    //     ? await res.json()
-    //     : await res.text();
-
-    //   const nextTests = Array.isArray(data)
-    //     ? data
-    //     : data?.testcases || data?.tests || [];
-
-    //   if (!Array.isArray(nextTests)) {
-    //     throw new Error("Unexpected response format: expected an array of tests.");
-    //   }
-
-    onGenerate();
-
-      setTests([{
-         "id":"TC-LAB-001",
-         "title":"Create and Place a New Laboratory Order",
-         "preconditions":[
-            "A clinician is logged into the system.",
-            "A patient record is open."
-         ],
-         "steps":[
-            "1. Navigate to the 'Laboratory Orders' section for the patient.",
-            "2. Select a diagnostic test from the available list.",
-            "3. Fill in any required information for the order (e.g., diagnosis code, notes).",
-            "4. Click 'Submit' or 'Place Order'.",
-            "5. Verify that the system confirms the order has been placed successfully.",
-            "6. Check the patient's record to ensure the new lab order is listed in their order history."
-         ],
-         "expected":"The system must allow a clinician to successfully order a diagnostic test for a patient, and the order must be recorded in the patient's history.",
-         "risk":"high",
-         "regulatory_refs":[
-            "IEC 62304",
-            "sample_healthcare_requirements.txt"
-         ],
-         "rationale":"This test validates the core functionality of the laboratory ordering feature. A failure here would mean clinicians cannot order necessary tests, directly impacting patient care."
-      }]);
+      setTests(testcases);
       setStatus("success");
       setMessage("Tests initialized successfully.");
     } catch (err) {

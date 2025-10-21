@@ -1,0 +1,19 @@
+# dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-lock.yaml
+
+# build output (will be regenerated inside Docker)
+dist
+build
+
+# misc
+.DS_Store
+.git
+.gitignore
+.env
+.env.*
+.vscode
+.idea
+.firebase
