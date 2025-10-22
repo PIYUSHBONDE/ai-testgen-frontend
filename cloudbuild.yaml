@@ -69,3 +69,6 @@ availableSecrets:
 
 images:
   - 'gcr.io/${PROJECT_ID}/frontend-app:$SHORT_SHA'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
