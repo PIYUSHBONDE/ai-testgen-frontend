@@ -4,13 +4,13 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFunctions } from "firebase/functions";
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID  
+  apiKey: "AIzaSyC5AslKNESVjLHSoIUHzee-3WN4vjuwbbg",
+  authDomain: "gen-ai-hackathon-8bab9.firebaseapp.com",
+  projectId: "gen-ai-hackathon-8bab9",
+  storageBucket: "gen-ai-hackathon-8bab9.appspot.com",
+  messagingSenderId: "243024628153",
+  appId: "1:243024628153:web:f45e95895b858c8aac8e68",
+  measurementId: "G-SP6MWR73C9"
 };
 
 const app = initializeApp(firebaseConfig);
