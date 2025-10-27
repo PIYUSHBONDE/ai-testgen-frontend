@@ -62,7 +62,7 @@ export default function ChatWorkspace() {
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isAgentThinking, setIsAgentThinking] = useState(false);
-
+  const [docRefreshKey, setDocRefreshKey] = useState(0);
 
   useEffect(() => {
     if (user?.uid) {
@@ -200,11 +200,14 @@ export default function ChatWorkspace() {
           isLoading={isLoadingMessages}
           isAgentThinking={isAgentThinking}
           onRename={handleRenameConversation}
+          userId={user?.uid || ''}
+          refreshKey={docRefreshKey}
         />
         <MessageInput 
           onSend={handleSend}
           disabled={isAgentThinking || isLoadingMessages || !selectedConversationId}
           sessionId={selectedConversationId} 
+          onUploadComplete={() => setDocRefreshKey(k => k + 1)}
         />
       </div>
     </div>

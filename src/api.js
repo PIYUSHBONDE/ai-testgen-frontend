@@ -12,17 +12,17 @@ export async function runAgent(userId, sessionId, message) {
   return res.data;
 }
 
-export async function uploadFile(userId, sessionId, file) {
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("user_id", userId);
-  formData.append("session_id", sessionId);
+// export async function uploadFile(userId, sessionId, file) {
+//   const formData = new FormData();
+//   formData.append("file", file);
+//   formData.append("user_id", userId);
+//   formData.append("session_id", sessionId);
 
-  const res = await axios.post(`${API_BASE}/api/upload`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-  return res.data;
-}
+//   const res = await axios.post(`${API_BASE}/api/upload`, formData, {
+//     headers: { "Content-Type": "multipart/form-data" },
+//   });
+//   return res.data;
+// }
 
 export async function exportTestCaseToJira(testCase) {
   const res = await axios.post(`${API_BASE}/create-jira-test-case`, testCase);
@@ -64,5 +64,38 @@ export async function renameConversation(userId, sessionId, newTitle) {
     { new_title: newTitle },
     { params: { user_id: userId } }
   );
+  return res.data;
+}
+
+// --- 1. CORRECTED THIS FUNCTION ---
+export async function uploadFile(userId, sessionId, file) {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("user_id", userId);
+  formData.append("session_id", sessionId);
+
+  // This now points to your new RAG upload endpoint
+  const res = await axios.post(`${API_BASE}/api/rag/upload`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+}
+
+// --- 2. ADDED THIS NEW FUNCTION ---
+export async function fetchSessionDocuments(userId, sessionId) {
+  const res = await axios.get(`${API_BASE}/api/rag/documents/session/${sessionId}`, {
+    params: { user_id: userId }
+  });
+  return res.data; // Expected: { documents: [], ... }
+}
+
+// --- 3. ADDED THIS NEW FUNCTION ---
+export async function toggleDocumentActive(userId, documentId, newActiveState) {
+  // We send this as form data to match the main.py correction
+  const formData = new FormData();
+  formData.append("user_id", userId);
+  formData.append("is_active", newActiveState);
+
+  const res = await axios.patch(`${API_BASE}/api/rag/documents/${documentId}/toggle`, formData);
   return res.data;
 }

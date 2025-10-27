@@ -5,6 +5,7 @@ import { Trash2, Edit2, Download, Copy, RefreshCcw, Bot, User, Loader2 , Check, 
 import { Card } from '../ui'
 import { format } from 'date-fns';
 import TestCasesMessage from '../TestCaseMessage'
+import DocumentManager from './DocumentManager';
 
 export type Message = {
   id: string
@@ -27,17 +28,23 @@ export default function ChatPanel({
   messages,
   isLoading,
   isAgentThinking,
-  onRename
+  onRename,
+  userId,
+  refreshKey,
 }: {
   conversation: Conversation | null;
   messages: Message[];
   isLoading: boolean;
   isAgentThinking: boolean;
   onRename: (sessionId: string, newTitle: string) => Promise<void>;
+  userId: string;
+  refreshKey: number;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [tempTitle, setTempTitle] = useState(conversation?.title || '');
-  const endRef = useRef<HTMLDivElement | null>(null)
+  const endRef = useRef<HTMLDivElement | null>(null);
+  const [isDocManagerOpen, setIsDocManagerOpen] = useState(false);
+
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -62,28 +69,45 @@ export default function ChatPanel({
 
   return (
     <div className="absolute inset-0 flex flex-col h-full">
-      <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between flex-shrink-0">
+      <div className="flex items-center justify-between gap-2 px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
         {isEditing ? (
-          <div className="flex items-center gap-2 w-full">
-            <input 
-              type="text"
+          <>
+            <input
               value={tempTitle}
               onChange={(e) => setTempTitle(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveRename(); if (e.key === 'Escape') handleCancelRename(); }}
+              onKeyDown={(e) => { 
+                if (e.key === 'Enter') handleSaveRename(); 
+                if (e.key === 'Escape') handleCancelRename(); 
+              }}
               className="flex-1 bg-transparent rounded-md p-1 -m-1 font-semibold text-slate-900 dark:text-slate-100 outline-none ring-2 ring-emerald-500"
               autoFocus
             />
-            <button onClick={handleSaveRename} className="p-1 text-emerald-500 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-md"><Check size={18} /></button>
-            <button onClick={handleCancelRename} className="p-1 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md"><X size={18} /></button>
-          </div>
+            <Check onClick={handleSaveRename} className="w-5 h-5 cursor-pointer text-emerald-600" />
+            <X onClick={handleCancelRename} className="w-5 h-5 cursor-pointer text-slate-500" />
+          </>
         ) : (
           <>
-            <div className="font-semibold text-slate-900 dark:text-slate-100">{conversation?.title}</div>
-            <div className="flex items-center gap-3 text-slate-500">
-              <button onClick={() => setIsEditing(true)} title="Rename" className="hover:text-slate-800 dark:hover:text-slate-200"><Edit2 size={16} /></button>
-              <button title="Download" className="hover:text-slate-800 dark:hover:text-slate-200"><Download size={16} /></button>
-              <button title="Delete" className="hover:text-red-500"><Trash2 size={16} /></button>
-            </div>
+            <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100 flex-1">
+              {conversation?.title}
+            </h1>
+            
+            {/* Documents Button */}
+            {conversation && (<button
+              onClick={() => setIsDocManagerOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors text-sm font-medium"
+              title="Manage Documents"
+            >
+              📚 Documents
+            </button>
+          )}
+            
+            {conversation && (<button 
+              onClick={() => setIsEditing(true)} 
+              title="Rename" 
+              className="hover:text-slate-800 dark:hover:text-slate-200"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>)}
           </>
         )}
       </div>
@@ -163,6 +187,15 @@ export default function ChatPanel({
 
         <div ref={endRef} />
       </div>
+
+      <DocumentManager
+        sessionId={conversation?.id || null}
+        userId={userId}
+        isOpen={isDocManagerOpen}
+        onClose={() => setIsDocManagerOpen(false)}
+        refreshKey={refreshKey}
+      />
+
     </div>
   )
 }

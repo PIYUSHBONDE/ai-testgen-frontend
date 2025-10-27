@@ -7,9 +7,10 @@ interface FileUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpload: (file: File) => Promise<void>;
+  sessionId: string; // ADD THIS
 }
 
-export default function FileUploadModal({ isOpen, onClose, onUpload }: FileUploadModalProps) {
+export default function FileUploadModal({ isOpen, onClose, onUpload, sessionId }: FileUploadModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
