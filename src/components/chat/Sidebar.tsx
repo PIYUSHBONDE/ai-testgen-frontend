@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect  } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, ChevronsLeft, ChevronsRight, Sun, ChevronDown, Bot, ShieldCheck, Loader2, LogOut, User, Settings } from 'lucide-react';
+import { Plus, Search, ChevronsLeft, ChevronsRight, Sun, ChevronDown, Bot, ShieldCheck, Loader2, LogOut, User, Settings, Link as LinkIcon, CheckCircle, XCircle  } from 'lucide-react';
 import { Button, IconButton } from '../ui';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../ToastProvider';
 import { formatRelative } from 'date-fns';
+import { checkJiraConnectionStatus, initiateJiraOAuth, disconnectJira } from '../../api';
+
 
 // Types remain the same
 export type Conversation = {
@@ -40,6 +42,62 @@ export default function Sidebar({
   const { logout, user } = useAuth();
   const { addToast } = useToast();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [jiraConnected, setJiraConnected] = useState(false);
+  const [checkingJira, setCheckingJira] = useState(false);
+
+  useEffect(() => {
+    checkConnection();
+  }, [user]);
+
+  const checkConnection = async () => {
+    if (!user?.uid) return;
+    
+    setCheckingJira(true);
+    try {
+      const data = await checkJiraConnectionStatus(user.uid);
+      setJiraConnected(data.connected);
+    } catch (err) {
+      console.error('Failed to check Jira status:', err);
+    } finally {
+      setCheckingJira(false);
+    }
+  };
+
+  const handleConnectJira = async () => {
+    if (!user?.uid) return;
+    
+    try {
+      const data = await initiateJiraOAuth(user.uid);
+      // Redirect to Jira OAuth
+      window.location.href = data.authorization_url;
+    } catch (err) {
+      addToast({ 
+        title: 'Connection failed', 
+        description: 'Could not connect to Jira', 
+        type: 'error' 
+      });
+    }
+  };
+
+  const handleDisconnectJira = async () => {
+    if (!user?.uid) return;
+    
+    try {
+      await disconnectJira(user.uid);
+      setJiraConnected(false);
+      addToast({ 
+        title: 'Disconnected', 
+        description: 'Jira integration disconnected', 
+        type: 'info' 
+      });
+      setShowProfileMenu(false);
+    } catch (err) {
+      addToast({ 
+        title: 'Disconnect failed', 
+        type: 'error' 
+      });
+    }
+  };
 
   return (
     <>
@@ -189,6 +247,42 @@ export default function Sidebar({
                 <span>Settings</span>
               </button>
               <div className="h-px bg-slate-200 dark:bg-slate-700 my-1" />
+
+              {/* Jira Integration Section */}
+              <div className="px-2 py-1">
+                <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Integrations</div>
+                
+                {checkingJira ? (
+                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                    <Loader2 size={14} className="animate-spin" />
+                    <span>Checking...</span>
+                  </div>
+                ) : jiraConnected ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-500">
+                      <CheckCircle size={16} />
+                      <span>Jira Connected</span>
+                    </div>
+                    <button 
+                      onClick={handleDisconnectJira}
+                      className="w-full text-left px-2 py-1.5 text-xs rounded-md text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    >
+                      Disconnect Jira
+                    </button>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={handleConnectJira}
+                    className="w-full flex items-center gap-2 px-2 py-2 text-sm rounded-md text-blue-600 dark:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                  >
+                    <LinkIcon size={16} />
+                    <span>Connect to Jira</span>
+                  </button>
+                )}
+              </div>
+              
+              <div className="h-px bg-slate-200 dark:bg-slate-700 my-1" />
+
               <button 
                 onClick={async () => {
                   try { 

@@ -1,11 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Trash2, Edit2, Download, Copy, RefreshCcw, Bot, User, Loader2 , Check, X} from 'lucide-react'
+import { Trash2, Edit2, Download, Copy, RefreshCcw, Bot, User, Loader2 , Check, X, FileText } from 'lucide-react'
 import { Card } from '../ui'
 import { format } from 'date-fns';
 import TestCasesMessage from '../TestCaseMessage'
 import DocumentManager from './DocumentManager';
+import RequirementsManager from './RequirementsManager';
 
 export type Message = {
   id: string
@@ -44,6 +45,8 @@ export default function ChatPanel({
   const [tempTitle, setTempTitle] = useState(conversation?.title || '');
   const endRef = useRef<HTMLDivElement | null>(null);
   const [isDocManagerOpen, setIsDocManagerOpen] = useState(false);
+  const [isReqManagerOpen, setIsReqManagerOpen] = useState(false); // ← ADD THIS
+  const [showJiraModal, setShowJiraModal] = useState(false); // ← ADD THIS
 
 
   useEffect(() => {
@@ -90,6 +93,18 @@ export default function ChatPanel({
             <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100 flex-1">
               {conversation?.title}
             </h1>
+
+            {/* ✅ ADD REQUIREMENTS BUTTON HERE */}
+            {conversation && (
+              <button
+                onClick={() => setIsReqManagerOpen(true)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors text-sm font-medium"
+                title="Manage Requirements"
+              >
+                <FileText size={16} />
+                Requirements
+              </button>
+            )}
             
             {/* Documents Button */}
             {conversation && (<button
@@ -187,6 +202,14 @@ export default function ChatPanel({
 
         <div ref={endRef} />
       </div>
+
+      {/* ✅ ADD REQUIREMENTS MANAGER MODAL */}
+      <RequirementsManager
+        sessionId={conversation?.id || null}
+        userId={userId}
+        isOpen={isReqManagerOpen}
+        onClose={() => setIsReqManagerOpen(false)}  
+      />
 
       <DocumentManager
         sessionId={conversation?.id || null}

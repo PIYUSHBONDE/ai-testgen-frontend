@@ -99,3 +99,146 @@ export async function toggleDocumentActive(userId, documentId, newActiveState) {
   const res = await axios.patch(`${API_BASE}/api/rag/documents/${documentId}/toggle`, formData);
   return res.data;
 }
+
+// ============================================================================
+// JIRA OAUTH API FUNCTIONS
+// ============================================================================
+
+export async function checkJiraConnectionStatus(userId) {
+  const res = await axios.get(`${API_BASE}/api/jira/status`, {
+    params: { user_id: userId }
+  });
+  return res.data; // { connected: boolean, jira_url?: string, expires_at?: string }
+}
+
+export async function initiateJiraOAuth(userId) {
+  const res = await axios.get(`${API_BASE}/api/jira/connect`, {
+    params: { user_id: userId }
+  });
+  return res.data; // { authorization_url: string }
+}
+
+export async function disconnectJira(userId) {
+  const res = await axios.delete(`${API_BASE}/api/jira/disconnect`, {
+    params: { user_id: userId }
+  });
+  return res.data;
+}
+
+export async function fetchJiraProjects(userId) {
+  const res = await axios.get(`${API_BASE}/api/jira/projects`, {
+    params: { user_id: userId }
+  });
+  return res.data; // { projects: [{key, name}] } or { error: string }
+}
+
+export async function fetchJiraRequirements(userId, projectKey) {
+  const res = await axios.post(`${API_BASE}/api/jira/fetch-requirements`, {
+    user_id: userId,
+    project_key: projectKey
+  });
+  return res.data; // { status: "success", requirements: [...] } or { error: string }
+}
+
+export async function createJiraTestCase(userId, projectKey, testCase, requirementKey = null) {
+  const res = await axios.post(`${API_BASE}/api/jira/create-test-case`, {
+    user_id: userId,
+    project_key: projectKey,
+    test_case: testCase,
+    requirement_key: requirementKey
+  });
+  return res.data; // { status: "success", jira_key, jira_url } or { error: string }
+}
+
+// Update the import function signature
+export async function importJiraRequirements(
+  userId,
+  sessionId,
+  requirements,
+  overwrite = false
+){
+  const response = await fetch(`${API_BASE_URL}/api/jira/import-requirements`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      user_id: userId,
+      session_id: sessionId,
+      requirements,
+      overwrite,
+    }),
+  });
+  if (!response.ok) throw new Error('Failed to import requirements');
+  return response.json();
+}
+
+export async function deleteRequirement(
+  userId,
+  sessionId,
+  requirementId 
+){
+  console.log("Deleting requirement ID: " + requirementId);
+  const response = await fetch(
+    `${API_BASE_URL}/api/requirements/${requirementId}?user_id=${userId}&session_id=${sessionId}`,
+    {
+      method: 'DELETE',
+    }
+  );
+  console.log("delete: " + response);
+  if (!response.ok) throw new Error('Failed to delete requirement');
+  return response.json();
+}
+
+export async function checkDuplicateRequirements(
+  userId,
+  sessionId,
+  requirementIds
+){
+  const response = await fetch(`${API_BASE_URL}/api/jira/check-duplicate-requirements`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      user_id: userId,
+      session_id: sessionId,
+      requirement_ids: requirementIds,
+    }),
+  });
+  if (!response.ok) throw new Error('Failed to check duplicates');
+  return response.json();
+}
+
+
+export async function getSessionRequirements(userId, sessionId) {
+  const res = await axios.get(`${API_BASE}/api/requirements/session/${sessionId}`, {
+    params: { user_id: userId }
+  });
+  return res.data;
+}
+const deleteAllRequirements = async () => {
+  if (!sessionId) return;
+  
+  if (!confirm("Are you sure you want to delete all imported requirements for this session?")) {
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/requirements/session/${sessionId}?user_id=${userId}`, {
+      method: "DELETE"
+    });
+
+    const data = await res.json();
+
+    if (data.status === "success") {
+      addToast({ 
+        title: "Deleted", 
+        description: `${data.deleted} requirements removed`, 
+        type: "success" 
+      });
+      fetchRequirements();
+    } else {
+      throw new Error("Delete failed");
+    }
+  } catch (err) {
+    addToast({ title: "Error deleting requirements", type: "error" });
+    console.error(err);
+  }
+};
