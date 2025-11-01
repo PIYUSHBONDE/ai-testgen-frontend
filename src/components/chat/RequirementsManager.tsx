@@ -191,6 +191,7 @@ const prepareImport = async () => {
       await performImport(false);
     }
   } catch (err) {
+    console.log('Failed to check duplicates:', err);
     addToast({ title: 'Failed to check duplicates', type: 'error' });
   } finally {
     setLoadingImport(false);

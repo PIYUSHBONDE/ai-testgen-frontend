@@ -131,7 +131,7 @@ export default function Sidebar({
             - This makes it expand to fill all available vertical space.
             - This correctly pushes the profile section (which comes after this div) to the very bottom of the sidebar.
         */}
-        <div className="flex-1 scrollbar-hide flex flex-col overflow-hidden">
+        <div className="flex-1 scrollbar-hide flex flex-col overflow-hidden ">
             {!collapsed ? (
                 // Expanded View
                 <div className="flex-1 flex flex-col overflow-y-auto">
@@ -145,7 +145,7 @@ export default function Sidebar({
                             <div className="absolute left-3 top-2.5 text-slate-400"><Search size={16} /></div>
                         </div>
                     </div>
-                    <div className="flex-1 overflow-y-auto px-3 mt-4 space-y-2">
+                    <div className="flex-1 overflow-y-auto px-3 mt-4 space-y-2 scrollbar-hide">
                         {/* {projects.map((p) => (
                             <details key={p.id} open className="group">
                                 <summary className="cursor-pointer list-none py-2 px-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400">

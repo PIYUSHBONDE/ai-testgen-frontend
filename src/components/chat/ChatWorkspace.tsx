@@ -129,17 +129,63 @@ export default function ChatWorkspace() {
 
     try {
       const aiResponse = await sendMessage(user.uid, selectedConversationId, text);
-      const aiMsg: Message = { id: `a${Date.now()}`, role: 'assistant', text: aiResponse.text, createdAt: new Date().toISOString() };
+
+      // --- THIS IS THE UPDATED TRANSFORMATION LOGIC ---
+      let transformedTestCases: any[] | undefined = undefined;
+
+      if (aiResponse.aggregated_testcases && Array.isArray(aiResponse.aggregated_testcases)) {
+        transformedTestCases = aiResponse.aggregated_testcases.map((suite: any) => {
+          
+          // NEW: Create an array of {step, expected} objects
+          const stepDetails: { step: string, expected: string }[] = [];
+          if (Array.isArray(suite.testcases)) {
+            suite.testcases.forEach((tc: any) => {
+              // tc[0] is number, tc[1] is step, tc[2] is expected
+              if (Array.isArray(tc) && tc.length >= 2) { 
+                stepDetails.push({
+                  step: tc[1] || '', // Step Description
+                  expected: tc[2] || '', // Expected Result
+                });
+              }
+            });
+          }
+          // --- END NEW LOGIC ---
+
+          // Map to the format TestCaseCard now expects
+          return {
+            id: suite.testcase_id || `tc-${Math.random()}`,
+            title: suite['Testcase Title'] || 'Untitled Test Case',
+            preconditions: suite.preconditions || [], // Not in new data, default
+            
+            stepDetails: stepDetails, // <--- Pass the new structured array
+            
+            risk: suite.risk || "", // Not in new data, default
+            regulatory_refs: suite.compliance_ids || [], // Map compliance_ids
+            rationale: suite.rationale || "", // Not in new data, default
+          };
+        });
+      }
+      // --- END OF TRANSFORMATION ---
+
+      // Create the new AI message object
+      const aiMsg: Message = { 
+        id: `a${Date.now()}`, 
+        role: 'assistant', 
+        text: aiResponse.text, // This is the 'final_summary'
+        createdAt: new Date().toISOString(),
+        testcases: transformedTestCases // Pass the transformed data
+      };
+      
       setMessages(prev => [...prev, aiMsg]);
 
-      // Update the conversation's timestamp and move it to the top of the list
+      // Update the conversation's timestamp and title, and move it to the top
       setConversations(prev => {
         const currentConv = prev.find(conv => conv.id === selectedConversationId);
         if (!currentConv) return prev;
 
         const updatedConv = { 
           ...currentConv, 
-          title: aiResponse.updated_title || currentConv.title,
+          title: aiResponse.updated_title || currentConv.title, 
           updatedAt: new Date().toISOString() 
         };
 
