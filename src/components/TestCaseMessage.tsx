@@ -106,6 +106,9 @@ import { Button, IconButton } from './ui';
 import { useToast } from './ToastProvider';
 import { exportTestCaseToJira, fetchJiraProjects, fetchJiraRequirements } from '../api'; // Your API function
 
+
+import * as XLSX from 'xlsx';
+
 // Define the shape of a single test case object
 type TestCase = {
   id: string;
@@ -113,6 +116,13 @@ type TestCase = {
   stepDetails: { step: string, expected: string }[];
   [key: string]: any; 
 };
+
+/**
+ * Generates an Excel file from a test case object
+ * @param {Object} testCase - The test case object containing id, title, stepDetails, and regulatory_refs
+ * @param {string} [outputFileName] - Optional custom filename (defaults to testCase.title)
+ */
+
 
 
 // Define the status types for progress tracking
@@ -182,6 +192,103 @@ export default function TestCasesMessage({ testcases, userId }: TestCasesMessage
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [isLoadingRequirements, setIsLoadingRequirements] = useState(false);
 
+  function generateTestCaseExcel(testCase, outputFileName = null) {
+  try {
+    // Validate input
+    if (!testCase || !testCase.id || !testCase.title) {
+      throw new Error('Invalid test case object: missing required fields (id, title)');
+    }
+    console.log('Generating Excel for test case:', testCase);
+
+    // Create a new workbook
+    const workbook = XLSX.utils.book_new();
+
+    // Sheet 1: Basic Info
+    const infoData = [
+      { ID: testCase.id, Title: testCase.title }
+    ];
+    
+    // Add optional fields if they exist
+    if (testCase.risk) {
+      infoData[0].Risk = testCase.risk;
+    }
+    if (testCase.rationale) {
+      infoData[0].Rationale = testCase.rationale;
+    }
+    
+    const infoSheet = XLSX.utils.json_to_sheet(infoData);
+    XLSX.utils.book_append_sheet(workbook, infoSheet, "Info");
+
+    // Sheet 2: Preconditions (if any)
+    if (testCase.preconditions && testCase.preconditions.length > 0) {
+      const preconditionsSheet = XLSX.utils.json_to_sheet(
+        testCase.preconditions.map((precondition, index) => ({ 
+          No: index + 1,
+          Precondition: precondition 
+        }))
+      );
+      XLSX.utils.book_append_sheet(workbook, preconditionsSheet, "Preconditions");
+    }
+
+    // Sheet 3: Step Details
+    if (testCase.stepDetails && testCase.stepDetails.length > 0) {
+      const stepsWithNumbers = testCase.stepDetails.map((detail, index) => ({
+        No: index + 1,
+        Step: detail.step,
+        Expected: detail.expected
+      }));
+      const stepsSheet = XLSX.utils.json_to_sheet(stepsWithNumbers);
+      XLSX.utils.book_append_sheet(workbook, stepsSheet, "Steps");
+    }
+
+    // Sheet 4: Regulatory References
+    if (testCase.regulatory_refs && testCase.regulatory_refs.length > 0) {
+      const regSheet = XLSX.utils.json_to_sheet(
+        testCase.regulatory_refs.map((ref, index) => ({ 
+          No: index + 1,
+          Regulatory_Reference: ref 
+        }))
+      );
+      XLSX.utils.book_append_sheet(workbook, regSheet, "Regulatory_Refs");
+    }
+
+    // Generate filename
+    const fileName = outputFileName || `${sanitizeFileName(testCase.title)}.xlsx`;
+    
+    // Write to Excel file
+    XLSX.writeFile(workbook, fileName);
+
+    console.log(`Excel file "${fileName}" generated successfully!`);
+    addToast({
+      title: 'Excel Export Complete',
+      description: `Test case exported successfully in excel to local system.`,
+      type: 'success'
+    });
+    return fileName;
+    
+  } catch (error) {
+    addToast({
+      title: 'Failed to Generate Excel',
+      description: `Test case export failed.`,
+      type: 'error'
+    });
+    console.error('Error generating Excel file:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Helper function to sanitize filename
+ * @param {string} filename - The filename to sanitize
+ * @returns {string} Sanitized filename
+ */
+function sanitizeFileName(filename) {
+  // Remove or replace invalid filename characters
+  return filename
+    .replace(/[<>:"/\\|?*]/g, '-') // Replace invalid chars with dash
+    .replace(/\s+/g, '_') // Replace spaces with underscore
+    .substring(0, 200); // Limit length to avoid filesystem issues
+}
 
   useEffect(() => {
     // Only run if modal is open and we have a user ID
@@ -467,8 +574,18 @@ export default function TestCasesMessage({ testcases, userId }: TestCasesMessage
               {/* End Jira Linker */}
 
               {/* Export Buttons */}
+              
               <div className="flex gap-3">
                 <Button variant="ghost" onClick={() => setIsDetailModalOpen(false)} disabled={isExporting}>Cancel</Button>
+                <Button 
+                  className="bg-emerald-600 min-w-[180px]" 
+                  onClick={()=>{generateTestCaseExcel(selectedTestCase!);console.log('Excel generated')}} 
+                  // Disable if exporting, no items, or no project
+                  disabled={isExporting || selectedIds.size === 0 }
+                >
+                  {isExporting ? <Loader2 className="animate-spin mr-2" /> : null}
+                  {isExporting ? 'Exporting...' : `Export ${selectedIds.size} to excel`}
+                </Button>
                 <Button 
                   className="bg-emerald-600 min-w-[180px]" 
                   onClick={handleExport} 
