@@ -252,6 +252,8 @@ function TestCaseCard({ testcase }) {
     rationale = "",
   } = testcase || {};
 
+  console.log("Rendering TestCaseCard with testcase:", testcase);
+
   // --- REMOVED: normalizedSteps is no longer needed ---
 
   return (

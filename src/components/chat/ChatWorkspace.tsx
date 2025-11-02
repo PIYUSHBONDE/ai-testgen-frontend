@@ -50,6 +50,46 @@ const initialMessages: Message[] = [
   },
 ]
 
+
+  // Define interfaces for your data structure
+interface Testcase {
+  // Add your testcase properties based on your actual data
+  testcase_id?: string;
+  title?: string;
+  // ... other testcase properties
+}
+
+interface AggregatedTestcase {
+  testcase_id: string;
+  testcases: Testcase[];
+  'Testcase Title'?: string;
+  compliance_ids?: string[];
+}
+
+interface ConversationContent {
+  aggregated_testcases: AggregatedTestcase[];
+}
+
+interface ConversationEntry {
+  id: number;
+  session_id: string;
+  user_id: string;
+  app_name: string;
+  role: 'user' | 'assistant';
+  text: string;
+  content: ConversationContent;
+  created_at: string;
+}
+
+interface FilteredConversation {
+  createdAt: string;
+  text: string;
+  role: 'user' | 'assistant';
+  testcases: Testcase[];
+}
+
+
+
 export default function ChatWorkspace() {
   const { user } = useAuth();
   const [collapsed, setCollapsed] = useState(false)
@@ -63,6 +103,47 @@ export default function ChatWorkspace() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isAgentThinking, setIsAgentThinking] = useState(false);
   const [docRefreshKey, setDocRefreshKey] = useState(0);
+
+
+// Filter function
+const fetchAndTransformData = (conversationHistory) => {
+      try {
+        
+        const filtered = conversationHistory.map((entry: any) => {
+          const aggregatedTestcases = entry.content?.aggregated_testcases || [];
+          
+          const testcases = aggregatedTestcases
+            .filter((tc: any) => tc.testcases && tc.testcases.length > 0)
+            .map((tc: any) => ({
+              id: tc.testcase_id,
+              title: tc['Testcase Title'],
+              regulatory_refs: tc.compliance_ids || [],
+              stepDetails: tc.testcases.map((testcase: string[]) => ({
+                step: testcase[1] || '',
+                expected: testcase[2] || '',
+              })),
+              preconditions: [],
+              rationale: '',
+              risk: '',
+            }));
+          
+          return {
+            createdAt: entry.created_at,
+            text: entry.content.text,
+            role: entry.content.role,
+            testcases: testcases,
+          };
+        });
+
+        return filtered;
+      } catch (error) {
+        console.error('Error fetching conversations:', error);
+      }
+    };
+
+// Usage example
+
+
 
   useEffect(() => {
     if (user?.uid) {
@@ -109,7 +190,10 @@ export default function ChatWorkspace() {
 
     fetchMessages(user.uid, c.id)
       .then(fetchedMessages => {
-        setMessages(fetchedMessages);
+        const filteredHistory = fetchAndTransformData(fetchedMessages.conversation_history);
+        setMessages(filteredHistory);
+        console.log("Fetched Messages: ", fetchedMessages.conversation_history);
+        console.log("Filtered Messages: ", filteredHistory);
       })
       .catch(err => {
         console.error("Failed to fetch messages for session:", c.id, err);
@@ -134,7 +218,11 @@ export default function ChatWorkspace() {
       let transformedTestCases: any[] | undefined = undefined;
 
       if (aiResponse.aggregated_testcases && Array.isArray(aiResponse.aggregated_testcases)) {
-        transformedTestCases = aiResponse.aggregated_testcases.map((suite: any) => {
+        
+        
+
+        transformedTestCases = aiResponse.aggregated_testcases
+            .filter((tc: any) => tc.testcases && tc.testcases.length > 0).map((suite: any) => {
           
           // NEW: Create an array of {step, expected} objects
           const stepDetails: { step: string, expected: string }[] = [];
