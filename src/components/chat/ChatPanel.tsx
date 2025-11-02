@@ -297,6 +297,7 @@ export default function ChatPanel({
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
+    console.log("Messages : ", messages); 
   }, [messages, isAgentThinking])
 
   useEffect(() => {
@@ -377,7 +378,7 @@ export default function ChatPanel({
             <Loader2 size={48} className="animate-spin mb-4" />
             <h3 className="text-xl font-medium">Loading Messages...</h3>
           </div> 
-        ) : messages.length === 0 ? (
+        ) : messages && messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-slate-500">
                 <Bot size={48} className="mb-4" />
                 <h3 className="text-xl font-medium">Start the conversation</h3>
@@ -385,7 +386,7 @@ export default function ChatPanel({
             </div>
         ) : (
             <AnimatePresence initial={false} mode="popLayout">
-            {messages.map((m) => (
+            {messages && messages.map((m) => (
                 <motion.div key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} 
                             className={`group flex items-start gap-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 

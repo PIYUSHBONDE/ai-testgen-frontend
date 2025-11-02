@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../ToastProvider';
 import { uploadFile } from '../../api';
 
-export default function MessageInput({ onSend, disabled, sessionId, onUploadComplete }: { onSend: (text: string) => void; disabled?: boolean, sessionId: string | null; onUploadComplete: () => void; }) {
+export default function   MessageInput({ onSend, disabled, sessionId, onUploadComplete }: { onSend: (text: string) => void; disabled?: boolean, sessionId: string | null; onUploadComplete: () => void; }) {
   const [value, setValue] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false); // 2. Add state to control the modal

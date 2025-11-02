@@ -72,7 +72,7 @@ export async function fetchMessages(userId, sessionId) {
   const res = await axios.get(`${API_BASE}/sessions/${sessionId}/messages`, {
     params: { user_id: userId }
   });
-  return res.data.messages; // Expected: an array of message objects
+  return res.data; // Expected: an array of message objects
 }
 
 export async function renameConversation(userId, sessionId, newTitle) {

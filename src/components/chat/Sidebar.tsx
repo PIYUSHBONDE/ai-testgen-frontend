@@ -107,13 +107,13 @@ export default function Sidebar({
         transition={{ duration: 0.2 }}
         className="relative flex flex-col bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 h-full z-20"
       >
-        <IconButton 
+        {/* <IconButton 
           onClick={onToggle} 
           title={collapsed ? 'Open sidebar' : 'Collapse sidebar'} 
           className="absolute top-1/2 -translate-y-1/2 right-0 translate-x-1/2 z-30 bg-white dark:bg-slate-800 border dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
         >
           {collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
-        </IconButton>
+        </IconButton> */}
 
         <div className="p-4 flex items-center h-20">
           <div className={`flex items-center gap-3 overflow-hidden`}>
