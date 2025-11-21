@@ -192,8 +192,8 @@ const fetchAndTransformData = (conversationHistory) => {
       .then(fetchedMessages => {
         const filteredHistory = fetchAndTransformData(fetchedMessages.conversation_history);
         setMessages(filteredHistory);
-        console.log("Fetched Messages: ", fetchedMessages.conversation_history);
-        console.log("Filtered Messages: ", filteredHistory);
+        // console.log("Fetched Messages: ", fetchedMessages.conversation_history);
+        // console.log("Filtered Messages: ", filteredHistory);
       })
       .catch(err => {
         console.error("Failed to fetch messages for session:", c.id, err);
@@ -205,14 +205,37 @@ const fetchAndTransformData = (conversationHistory) => {
 
   // --- UPDATED: Sends a message to the backend and receives the AI response ---
   const handleSend = async (text: string) => {
-    if (!user?.uid || !selectedConversationId) return;
+    if (!user?.uid) return;
+
+    let currentSessionId = selectedConversationId;
+
+    if (!currentSessionId) {
+      try {
+        // Auto-create session
+        const newSessionData = await createNewSession(user.uid);
+        currentSessionId = newSessionData.session_id;
+
+        const newConversation: Conversation = { 
+          id: newSessionData.session_id, 
+          title: newSessionData.title, 
+          updatedAt: new Date().toISOString(),  
+        };
+
+        // Update State
+        setConversations(prev => [newConversation, ...prev]);
+        setSelectedConversationId(currentSessionId);
+      } catch (error) {
+        console.error("Failed to auto-create session:", error);
+        return; // Stop execution if creation fails
+      }
+    }
 
     const userMsg: Message = { id: `u${Date.now()}`, role: 'user', text, createdAt: new Date().toISOString() };
     setMessages(prev => [...prev, userMsg]);
     setIsAgentThinking(true);
 
     try {
-      const aiResponse = await sendMessage(user.uid, selectedConversationId, text);
+      const aiResponse = await sendMessage(user.uid, currentSessionId, text);
 
       // --- THIS IS THE UPDATED TRANSFORMATION LOGIC ---
       let transformedTestCases: any[] | undefined = undefined;
@@ -268,7 +291,7 @@ const fetchAndTransformData = (conversationHistory) => {
 
       // Update the conversation's timestamp and title, and move it to the top
       setConversations(prev => {
-        const currentConv = prev.find(conv => conv.id === selectedConversationId);
+        const currentConv = prev.find(conv => conv.id === currentSessionId);
         if (!currentConv) return prev;
 
         const updatedConv = { 
@@ -277,7 +300,7 @@ const fetchAndTransformData = (conversationHistory) => {
           updatedAt: new Date().toISOString() 
         };
 
-        const otherConvs = prev.filter(conv => conv.id !== selectedConversationId);
+        const otherConvs = prev.filter(conv => conv.id !== currentSessionId);
         return [updatedConv, ...otherConvs];
       });
 
@@ -339,7 +362,7 @@ const fetchAndTransformData = (conversationHistory) => {
         />
         <MessageInput 
           onSend={handleSend}
-          disabled={isAgentThinking || isLoadingMessages || !selectedConversationId}
+          disabled={isAgentThinking || isLoadingMessages}
           sessionId={selectedConversationId} 
           onUploadComplete={() => setDocRefreshKey(k => k + 1)}
         />

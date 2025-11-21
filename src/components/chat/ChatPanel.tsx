@@ -297,7 +297,7 @@ export default function ChatPanel({
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
-    console.log("Messages : ", messages); 
+    // console.log("Messages : ", messages); 
   }, [messages, isAgentThinking])
 
   useEffect(() => {

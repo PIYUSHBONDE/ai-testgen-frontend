@@ -43,3 +43,7 @@ Thumbs.db
 
 # Local environment variables
 .env.local
+
+.env.development
+.env.production
+env.*
