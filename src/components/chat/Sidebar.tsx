@@ -1,6 +1,7 @@
 import React, { useState, useEffect  } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, ChevronsLeft, ChevronsRight, Sun, ChevronDown, Bot, ShieldCheck, Loader2, LogOut, User, Settings, Link as LinkIcon, CheckCircle, XCircle  } from 'lucide-react';
+import { Plus, Search, ChevronsLeft, ChevronsRight, Sun, Moon, ChevronDown, Bot, ShieldCheck, Loader2, LogOut, User, Settings, Link as LinkIcon, CheckCircle, XCircle, BarChart } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button, IconButton } from '../ui';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../ToastProvider';
@@ -44,10 +45,27 @@ export default function Sidebar({
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [jiraConnected, setJiraConnected] = useState(false);
   const [checkingJira, setCheckingJira] = useState(false);
+  const [theme, setTheme] = useState('light')
 
   useEffect(() => {
     checkConnection();
   }, [user]);
+
+  useEffect(() => {
+    // initialize theme from localStorage or system preference
+    try {
+      const stored = localStorage.getItem('theme')
+      if (stored === 'dark' || (!stored && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        setTheme('dark')
+        document.documentElement.classList.add('dark')
+      } else {
+        setTheme('light')
+        document.documentElement.classList.remove('dark')
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [])
 
   const checkConnection = async () => {
     if (!user?.uid) return;
@@ -213,8 +231,17 @@ export default function Sidebar({
                 </div>
               )}
               {!collapsed && (
-                <IconButton onClick={() => addToast({ title: 'Theme toggled (placeholder)', type: 'info' })}>
-                  <Sun size={16} />
+                <IconButton
+                  onClick={() => {
+                    const next = theme === 'dark' ? 'light' : 'dark'
+                    try { localStorage.setItem('theme', next) } catch (e) {}
+                    setTheme(next)
+                    if (next === 'dark') document.documentElement.classList.add('dark')
+                    else document.documentElement.classList.remove('dark')
+                    addToast({ title: `Theme set to ${next}`, type: 'info' })
+                  }}
+                >
+                  {theme === 'dark' ? <Moon size={16} /> : <Sun size={16} />}
                 </IconButton>
               )}
             </div>
@@ -246,6 +273,10 @@ export default function Sidebar({
                 <Settings size={16} />
                 <span>Settings</span>
               </button>
+              <Link to="/analytics" onClick={() => setShowProfileMenu(false)} className="w-full flex items-center gap-3 px-2 py-2 text-sm rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                <BarChart size={16} />
+                <span>Analytics Dashboard</span>
+              </Link>
               <div className="h-px bg-slate-200 dark:bg-slate-700 my-1" />
 
               {/* Jira Integration Section */}

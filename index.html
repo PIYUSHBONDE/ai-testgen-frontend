@@ -5,6 +5,21 @@
     <link rel="icon" type="image/png" href="/my-icon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>HealthCase AI</title>
+    <script>
+      // Restore theme: prefer saved preference, otherwise use system preference
+      (function() {
+        try {
+          const stored = localStorage.getItem('theme')
+          if (stored === 'dark' || (!stored && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark')
+          } else {
+            document.documentElement.classList.remove('dark')
+          }
+        } catch (e) {
+          // ignore
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

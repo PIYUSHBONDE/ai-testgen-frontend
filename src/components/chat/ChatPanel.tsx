@@ -431,7 +431,7 @@ export default function ChatPanel({
 
                         <div className="h-px bg-slate-200 dark:bg-slate-700 mb-3" />
 
-                        <TestCasesMessage testcases={m.testcases} userId={userId} />
+                        <TestCasesMessage testcases={m.testcases} userId={userId} sessionId={conversation?.id || null} />
                       </div>
                     )}
 

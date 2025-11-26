@@ -1,9 +1,13 @@
-import React from 'react'
+import {
+  Card as ShadcnCard,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardFooter,
+} from './card.tsx'
 
-export default function Card({ children, className = '' }) {
-  return (
-    <div className={`rounded-2xl bg-white/60 dark:bg-slate-800/60 p-4 shadow-soft border border-transparent dark:border-slate-700/40 ${className}`}>
-      {children}
-    </div>
-  )
-}
+// Re-export named shadcn card components for compatibility with existing imports
+export { ShadcnCard as Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
+
+export default ShadcnCard

@@ -3,6 +3,7 @@ import { Sun, DownloadCloud } from 'lucide-react'
 import { Button, IconButton, Toggle } from './ui'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from './ToastProvider'
+import { Link, useNavigate } from 'react-router-dom'
 
 export default function Navbar({ step = 1, onExport = () => {} }) {
   const [dark, setDark] = useState(false)
@@ -52,21 +53,36 @@ export default function Navbar({ step = 1, onExport = () => {} }) {
           <Toggle checked={dark} onChange={setDark} />
 
           {user ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <div className="text-sm text-slate-700 dark:text-slate-200">{user.displayName || user.email}</div>
-              <Button
-                variant="ghost"
-                onClick={async () => {
-                  try {
-                    await logout()
-                    addToast({ title: 'Signed out', description: 'You have been signed out', type: 'info' })
-                  } catch (err) {
-                    addToast({ title: 'Sign out failed', description: err.message || 'Unable to sign out', type: 'error' })
-                  }
-                }}
-              >
-                Sign out
-              </Button>
+              <div className="relative">
+                <button
+                  className="px-3 py-1 rounded-md text-sm bg-slate-100 dark:bg-slate-700/40"
+                  onClick={() => {
+                    // naive menu toggle by navigating to analytics for demo; a real dropdown can be implemented
+                    // We'll show a small inline menu using navigate when clicked
+                  }}
+                >
+                  Profile
+                </button>
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-md shadow-lg border border-slate-200 dark:border-slate-700">
+                  <Link to="/analytics" className="block px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700">Analytics Dashboard</Link>
+                  <div className="border-t border-slate-100 dark:border-slate-700" />
+                  <button
+                    className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
+                    onClick={async () => {
+                      try {
+                        await logout()
+                        addToast({ title: 'Signed out', description: 'You have been signed out', type: 'info' })
+                      } catch (err) {
+                        addToast({ title: 'Sign out failed', description: err.message || 'Unable to sign out', type: 'error' })
+                      }
+                    }}
+                  >
+                    Sign out
+                  </button>
+                </div>
+              </div>
             </div>
           ) : null}
         </div>

@@ -8,6 +8,7 @@ import AuthGate from "./components/AuthGate";
 import EmailVerificationNotice from "./components/EmailVerificationNotice";
 import ChatWorkspace from "./components/chat/ChatWorkspace";
 import JiraCallback from "./components/JiraCallback"; // <--- IMPORT NEW FILE
+import AnalyticsDashboard from "./components/AnalyticsDashboard";
 
 function App() {
   const { user, loading } = useAuth()
@@ -24,6 +25,7 @@ function App() {
           <Routes>
             <Route path="/" element={<ChatWorkspace />} />
             <Route path="/jira-callback" element={<JiraCallback />} />
+            <Route path="/analytics" element={<AnalyticsDashboard />} />
           </Routes>
         </main>
       </div>

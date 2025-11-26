@@ -1,7 +1,7 @@
 import axios from "axios";
 
-const API_BASE = "https://fastapi-agent-backend-342811635923.us-east4.run.app";
-// const API_BASE = "http://127.0.0.1:8000";
+// const API_BASE = "https://fastapi-agent-backend-342811635923.us-east4.run.app";
+const API_BASE = "http://127.0.0.1:8000";
 
 
 
@@ -27,9 +27,10 @@ export async function runAgent(userId, sessionId, message) {
 //   return res.data;
 // }
 
-export async function exportTestCaseToJira(userId, projectKey, testCase, requirementKey = null) {
+export async function exportTestCaseToJira(userId, sessionId, projectKey, testCase, requirementKey = null) {
   const res = await axios.post(`${API_BASE}/api/jira/create-jira-test-case`, {
       user_id: userId,
+      session_id: sessionId,
       project_key: projectKey,
       test_case: testCase,
       requirement_key: requirementKey
@@ -150,6 +151,13 @@ export async function fetchJiraProjects(userId) {
   return res.data; // { projects: [{key, name}] } or { error: string }
 }
 
+export async function fetchJiraExports(sessionId, userId) {
+  const res = await axios.get(`${API_BASE}/api/jira/exports`, {
+    params: { session_id: sessionId, user_id: userId }
+  });
+  return res.data; // { exports: [...], total }
+}
+
 export async function fetchJiraRequirements(userId, projectKey) {
   const res = await axios.post(`${API_BASE}/api/jira/fetch-requirements`, {
     user_id: userId,
@@ -229,6 +237,22 @@ export async function getSessionRequirements(userId, sessionId) {
   const res = await axios.get(`${API_BASE}/api/requirements/session/${sessionId}`, {
     params: { user_id: userId }
   });
+  return res.data;
+}
+
+// --- Analytics API helpers ---
+export async function fetchAnalyticsOverview(userId) {
+  const res = await axios.get(`${API_BASE}/api/analytics/overview`, { params: { user_id: userId } });
+  return res.data;
+}
+
+export async function fetchAnalyticsSession(sessionId, userId) {
+  const res = await axios.get(`${API_BASE}/api/analytics/session/${sessionId}`, { params: { user_id: userId } });
+  return res.data;
+}
+
+export async function fetchExportsTimeseries(userId, days = 30) {
+  const res = await axios.get(`${API_BASE}/api/analytics/exports-timeseries`, { params: { user_id: userId, days } });
   return res.data;
 }
 const deleteAllRequirements = async () => {

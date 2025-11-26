@@ -4,7 +4,7 @@ import { Maximize2, X, CheckSquare, Square, Loader2, CheckCircle2, XCircle, Exte
 import TestCaseCard from './TestCaseCard'; 
 import { Button, IconButton } from './ui';
 import { useToast } from './ToastProvider';
-import { exportTestCaseToJira, fetchJiraProjects, fetchJiraRequirements } from '../api';
+import { exportTestCaseToJira, fetchJiraProjects, fetchJiraRequirements, fetchJiraExports } from '../api';
 import * as XLSX from 'xlsx';
 
 // Define the shape of a single test case object
@@ -44,9 +44,10 @@ const StatusDisplay = ({ state }: { state?: any }) => {
 interface TestCasesMessageProps {
   testcases: TestCase[];
   userId: string;
+  sessionId?: string | null; // Active session id from ChatWorkspace
 }
 
-export default function TestCasesMessage({ testcases, userId }: TestCasesMessageProps) {
+export default function TestCasesMessage({ testcases, userId, sessionId }: TestCasesMessageProps) {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedTestCase, setSelectedTestCase] = useState<TestCase | null>(testcases[0] || null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(testcases.map(tc => tc.id)));
@@ -71,17 +72,56 @@ export default function TestCasesMessage({ testcases, userId }: TestCasesMessage
       setSelectedRequirementKey(null);
 
       fetchJiraProjects(userId)
-        .then(data => {
+        .then((data: any) => {
           if (data.projects) {
             setJiraProjects(data.projects);
           } else if (data.error) {
             addToast({ title: 'Jira Error', description: data.error, type: 'error' });
           }
         })
-        .catch(err => addToast({ title: 'Failed to load Jira projects', description: err.message, type: 'error' }))
+        .catch((err: any) => addToast({ title: 'Failed to load Jira projects', description: err.message, type: 'error' }))
         .finally(() => setIsLoadingProjects(false));
     }
   }, [isDetailModalOpen, userId, addToast]);
+
+  // Load persisted Jira exports for this session so we can show permanent success state
+  useEffect(() => {
+    if (!isDetailModalOpen || !sessionId || !userId) return;
+
+    let mounted = true;
+    fetchJiraExports(sessionId, userId)
+      .then((data: any) => {
+        if (!mounted) return;
+        if (data && Array.isArray(data.exports)) {
+          const statusMap: Record<string, any> = {};
+          data.exports.forEach((e: any) => {
+            // try matching by testcase_id first
+            if (e.testcase_id) {
+              statusMap[e.testcase_id] = {
+                status: 'success',
+                jiraKey: e.jira_key,
+                jiraUrl: e.jira_url,
+                export_id: e.id,
+              };
+            } else if (e.testcase_data && e.testcase_data.id) {
+              // fallback: match by embedded testcase_data id
+              statusMap[e.testcase_data.id] = {
+                status: 'success',
+                jiraKey: e.jira_key,
+                jiraUrl: e.jira_url,
+                export_id: e.id,
+              };
+            }
+          });
+          setExportStatus(prev => ({ ...prev, ...statusMap }));
+        }
+      })
+      .catch(err => {
+        console.warn('Failed to fetch persisted Jira exports', err);
+      });
+
+    return () => { mounted = false; };
+  }, [isDetailModalOpen, sessionId, userId]);
 
   useEffect(() => {
     if (selectedProject && userId) {
@@ -90,14 +130,14 @@ export default function TestCasesMessage({ testcases, userId }: TestCasesMessage
       setSelectedRequirementKey(null);
       
       fetchJiraRequirements(userId, selectedProject)
-        .then(data => {
+        .then((data: any) => {
           if (data.requirements) {
             setJiraRequirements(data.requirements);
           } else if (data.error) {
             addToast({ title: 'Jira Error', description: data.error, type: 'error' });
           }
         })
-        .catch(err => addToast({ title: 'Failed to load Jira requirements', description: err.message, type: 'error' }))
+        .catch((err: any) => addToast({ title: 'Failed to load Jira requirements', description: err.message, type: 'error' }))
         .finally(() => setIsLoadingRequirements(false));
     }
   }, [selectedProject, userId, addToast]);
@@ -113,6 +153,53 @@ export default function TestCasesMessage({ testcases, userId }: TestCasesMessage
 
   const selectAll = () => setSelectedIds(new Set(testcases.map(tc => tc.id)));
   const deselectAll = () => setSelectedIds(new Set());
+
+  // --- 🎨 HELPER: Generate Beautiful Jira Markup ---
+  const generateJiraDescription = (tc: TestCase) => {
+    // 1. Header
+    let desc = `h2. ${tc.title}\n\n`;
+
+    // 2. Metadata Panel (Gray background panel for metadata)
+    desc += `{panel:title=Test Case Details|borderStyle=solid|borderColor=#dfe1e6|titleBGColor=#f4f5f7|bgColor=#ffffff}\n`;
+    desc += `* *ID:* ${tc.id}\n`;
+    desc += `* *Risk:* ${tc.risk || 'N/A'}\n`;
+    desc += `* *Regulatory Refs:* ${Array.isArray(tc.regulatory_refs) ? tc.regulatory_refs.join(', ') : 'N/A'}\n`;
+    desc += `{panel}\n\n`;
+
+    // 3. Rationale (Quoted text)
+    if (tc.rationale) {
+      desc += `*Rationale:*\n{quote}${tc.rationale}{quote}\n\n`;
+    }
+
+    // 4. Preconditions (Bulleted List)
+    if (Array.isArray(tc.preconditions) && tc.preconditions.length > 0) {
+      desc += `h3. Preconditions\n`;
+      tc.preconditions.forEach(p => desc += `* ${p}\n`);
+      desc += `\n`;
+    }
+
+    // 5. Test Steps Table (Double pipe || creates header)
+    desc += `h3. Test Steps\n`;
+    desc += `||#||Step Description||Expected Result||\n`;
+
+    if (Array.isArray(tc.stepDetails) && tc.stepDetails.length > 0) {
+       tc.stepDetails.forEach((s, i) => {
+         // Escape pipes to prevent breaking the table syntax
+         const safeStep = (s.step || '').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+         const safeExpected = (s.expected || '').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+         desc += `|${i+1}|${safeStep}|${safeExpected}|\n`;
+       });
+    } else if (Array.isArray(tc.steps) && tc.steps.length > 0) {
+       // Fallback for old format
+       tc.steps.forEach((s, i) => {
+          const safeStep = s.replace(/\|/g, '\\|');
+          const safeExpected = (i === tc.steps!.length - 1 && tc.expected) ? tc.expected.replace(/\|/g, '\\|') : ' ';
+          desc += `|${i+1}|${safeStep}|${safeExpected}|\n`;
+       });
+    }
+    
+    return desc;
+  };
 
   // --- 🚀 UPDATED: Split Columns Logic ---
   const handleExportCSV = () => {
@@ -202,6 +289,14 @@ export default function TestCasesMessage({ testcases, userId }: TestCasesMessage
     
     for (const testCase of testCasesToExport) {
       try {
+        // 1. Generate the beautiful description
+        const formattedDescription = generateJiraDescription(testCase);
+
+        console.log("Formatted Description for TC ID", testCase.id, ":\n", formattedDescription);
+
+        // 2. Prepare Payload
+        // We still prepare raw steps/expected in case the backend logic uses them separately,
+        // but we explicitly override 'description' with our formatted version.
         let stepsPayload: string[] = [];
         let expectedPayload: string = "";
 
@@ -215,15 +310,17 @@ export default function TestCasesMessage({ testcases, userId }: TestCasesMessage
 
         const apiTestCase = {
           ...testCase,
+          description: formattedDescription, // <--- INJECTED BEAUTIFUL DESCRIPTION
           steps: stepsPayload,
           expected: expectedPayload
         };
         delete (apiTestCase as any).stepDetails;
 
         const responseData = await exportTestCaseToJira(
-          userId, 
-          selectedProject, 
-          apiTestCase, 
+          userId,
+          sessionId || null,
+          selectedProject,
+          apiTestCase,
           selectedRequirementKey
         );
         
@@ -339,7 +436,23 @@ export default function TestCasesMessage({ testcases, userId }: TestCasesMessage
 
               {/* Right Detail Panel */}
               <div className="w-2/3 overflow-y-auto p-6 bg-white dark:bg-slate-900">
-                {selectedTestCase ? <TestCaseCard testcase={selectedTestCase} /> : <div className="text-slate-500">Select a test case to view its details.</div>}
+                        {selectedTestCase ? (
+                          <div>
+                            <div className="flex items-center justify-end gap-3 mb-3">
+                              <div className="flex items-center gap-2">
+                                <StatusDisplay state={exportStatus[selectedTestCase.id]} />
+                                {exportStatus[selectedTestCase.id] && exportStatus[selectedTestCase.id].jiraUrl ? (
+                                  <a href={exportStatus[selectedTestCase.id].jiraUrl} target="_blank" rel="noreferrer" className="text-blue-600 text-sm">
+                                    {exportStatus[selectedTestCase.id].jiraKey || 'View in Jira'}
+                                  </a>
+                                ) : null}
+                              </div>
+                            </div>
+                            <TestCaseCard testcase={selectedTestCase} />
+                          </div>
+                        ) : (
+                          <div className="text-slate-500">Select a test case to view its details.</div>
+                        )}
               </div>
             </div>
 
