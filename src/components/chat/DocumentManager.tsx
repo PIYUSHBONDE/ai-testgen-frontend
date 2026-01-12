@@ -29,8 +29,10 @@ export default function DocumentManager({
   userId,
   isOpen,
   onClose,
-  refreshKey
-}: DocumentManagerProps) {
+  refreshKey,
+  pendingUploadCount = 0,
+  pendingUploadFiles = []
+}: DocumentManagerProps & { pendingUploadCount?: number; pendingUploadFiles?: string[] }) {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(false);
   const { addToast } = useToast();
@@ -125,6 +127,25 @@ export default function DocumentManager({
 
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-4">
+              {pendingUploadCount > 0 ? (
+                <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Loader2 className="w-5 h-5 animate-spin text-yellow-600" />
+                    <div>
+                      <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">{pendingUploadCount} upload{pendingUploadCount > 1 ? 's' : ''} processing</p>
+                      <p className="text-xs text-yellow-700 dark:text-yellow-300">Uploads will appear here once processing completes.</p>
+                      {pendingUploadFiles && pendingUploadFiles.length > 0 ? (
+                        <ul className="mt-2 text-xs text-slate-600 dark:text-slate-400 space-y-1">
+                          {pendingUploadFiles.map((f, i) => (
+                            <li key={i} className="truncate">{f}</li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
               {loading ? (
                 <div className="flex items-center justify-center py-20">
                   <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />

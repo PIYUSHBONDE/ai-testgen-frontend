@@ -3,7 +3,8 @@ import Sidebar, { Project, Conversation } from './Sidebar'
 import ChatPanel, { Message } from './ChatPanel'
 import MessageInput from './MessageInput'
 import { useAuth } from '../../context/AuthContext'
-import { fetchSessions, createNewSession, sendMessage, fetchMessages, renameConversation} from '../../api';
+import { useToast } from '../ToastProvider'
+import { fetchSessions, createNewSession, sendMessage, fetchMessages, renameConversation, fetchSessionDocuments } from '../../api';
 
 // const mockProjects: Project[] = [
 //   {
@@ -92,17 +93,28 @@ interface FilteredConversation {
 
 export default function ChatWorkspace() {
   const { user } = useAuth();
+  const { addToast } = useToast();
   const [collapsed, setCollapsed] = useState(false)
 
   // const [projects] = useState(mockProjects)
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
+  const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isAgentThinking, setIsAgentThinking] = useState(false);
   const [docRefreshKey, setDocRefreshKey] = useState(0);
+  
+  // Upload processing tracking
+  const [uploadBaselineActiveCount, setUploadBaselineActiveCount] = useState<number | null>(null);
+  const [uploadExpectedActiveCount, setUploadExpectedActiveCount] = useState<number | null>(null);
+  const [pendingUploadFiles, setPendingUploadFiles] = useState<string[]>([]);
+  
+  const uploadPendingCount = uploadBaselineActiveCount !== null && uploadExpectedActiveCount !== null
+    ? Math.max(0, (uploadExpectedActiveCount - uploadBaselineActiveCount))
+    : 0;
 
 
 // Filter function
@@ -162,6 +174,7 @@ const fetchAndTransformData = (conversationHistory) => {
     if (!user?.uid) return;
 
     try {
+      setIsCreatingConversation(true);
       const newSessionData = await createNewSession(user.uid);
       
       const newConversation: Conversation = { 
@@ -175,9 +188,11 @@ const fetchAndTransformData = (conversationHistory) => {
       // Select it and clear messages
       setSelectedConversationId(newConversation.id);
       setMessages([]);
+      setIsCreatingConversation(false);
       
     } catch (error) {
       console.error("Failed to create new session:", error);
+      setIsCreatingConversation(false);
     }
   };
 
@@ -192,8 +207,6 @@ const fetchAndTransformData = (conversationHistory) => {
       .then(fetchedMessages => {
         const filteredHistory = fetchAndTransformData(fetchedMessages.conversation_history);
         setMessages(filteredHistory);
-        // console.log("Fetched Messages: ", fetchedMessages.conversation_history);
-        // console.log("Filtered Messages: ", filteredHistory);
       })
       .catch(err => {
         console.error("Failed to fetch messages for session:", c.id, err);
@@ -210,7 +223,11 @@ const fetchAndTransformData = (conversationHistory) => {
     let currentSessionId = selectedConversationId;
 
     if (!currentSessionId) {
+      // Provide immediate feedback so user knows a new session is being created
+      setIsAgentThinking(true)
       try {
+        addToast({ title: 'Starting new conversation', description: 'Creating a new session for your message...', type: 'info', duration: 2500 })
+
         // Auto-create session
         const newSessionData = await createNewSession(user.uid);
         currentSessionId = newSessionData.session_id;
@@ -226,6 +243,8 @@ const fetchAndTransformData = (conversationHistory) => {
         setSelectedConversationId(currentSessionId);
       } catch (error) {
         console.error("Failed to auto-create session:", error);
+        setIsAgentThinking(false)
+        addToast({ title: 'Could not create session', description: 'Please try again.', type: 'error' })
         return; // Stop execution if creation fails
       }
     }
@@ -242,8 +261,6 @@ const fetchAndTransformData = (conversationHistory) => {
 
       if (aiResponse.aggregated_testcases && Array.isArray(aiResponse.aggregated_testcases)) {
         
-        
-
         transformedTestCases = aiResponse.aggregated_testcases
             .filter((tc: any) => tc.testcases && tc.testcases.length > 0).map((suite: any) => {
           
@@ -313,15 +330,81 @@ const fetchAndTransformData = (conversationHistory) => {
     }
   };
 
+  // ✅ UPDATED: Handle a batch of files at once to prevent race conditions
+  const handleUploadComplete = async (filenames: string[]) => {
+    if (!user?.uid || !selectedConversationId || filenames.length === 0) return;
+    
+    try {
+      // 1. Get the current count from the server (Baseline)
+      const res = await fetchSessionDocuments(user.uid, selectedConversationId).catch(() => ({ documents: [] }));
+      const currentActiveCount = (res && res.documents) ? res.documents.length : 0;
+
+      // 2. Update State atomically
+      // If a baseline is already set, we just add to the expected count.
+      // If no baseline is set, we initialize it with the current server count.
+      setUploadBaselineActiveCount(prevBaseline => {
+        if (prevBaseline === null) {
+            return currentActiveCount;
+        }
+        return prevBaseline;
+      });
+
+      setUploadExpectedActiveCount(prevExpected => {
+        // If we are starting a new batch, the expected is baseline + new files
+        // If we are adding to an existing batch, we add new files to the previous expected
+        const base = prevExpected !== null ? prevExpected : currentActiveCount;
+        return base + filenames.length;
+      });
+
+      setPendingUploadFiles(prev => [...filenames, ...prev]);
+
+      // Trigger immediate doc refresh
+      setDocRefreshKey(k => k + 1);
+    } catch (err) {
+      console.warn('Failed to register upload start:', err);
+    }
+  };
+
+  // Poll for processing completion when we have expected active count
+  useEffect(() => {
+    if (!user?.uid || !selectedConversationId || uploadExpectedActiveCount === null) return;
+
+    let mounted = true;
+    const poll = async () => {
+      try {
+        // Poll up to 20 seconds
+        for (let i = 0; i < 20; i++) {
+          if (!mounted) return;
+          await new Promise(r => setTimeout(r, 1000));
+          const res = await fetchSessionDocuments(user.uid, selectedConversationId).catch(() => ({ documents: [] }));
+          const activeCount = (res && res.documents) ? res.documents.length : 0;
+          
+          if (activeCount >= (uploadExpectedActiveCount || 0)) {
+            addToast({ title: 'Documents processed', description: 'Uploaded documents are now searchable.', type: 'success' });
+            // Clear pending counters
+            setUploadBaselineActiveCount(null);
+            setUploadExpectedActiveCount(null);
+            setPendingUploadFiles([]);
+            setDocRefreshKey(k => k + 1);
+            return;
+          }
+        }
+
+        addToast({ title: 'Processing', description: 'Documents are still being processed. They will appear shortly.', type: 'info' });
+      } catch (err) {
+        console.warn('Upload completion poll failed', err);
+      }
+    };
+
+    poll();
+    return () => { mounted = false };
+  }, [uploadExpectedActiveCount, selectedConversationId, user?.uid]);
+
   // Derive active conversation from the flat list
   const activeConversation = useMemo(() => {
     if (!selectedConversationId) return null;
     return conversations.find(c => c.id === selectedConversationId) || null;
   }, [conversations, selectedConversationId]);
-
-  // if (isLoading) {
-  //     return <div>Loading conversations...</div>
-  // }
 
   const handleRenameConversation = async (sessionId: string, newTitle: string) => {
     try {
@@ -347,7 +430,8 @@ const fetchAndTransformData = (conversationHistory) => {
         onToggle={() => setCollapsed(s => !s)} 
         onSelectConversation={handleSelectConversation} 
         onNewConversation={handleNewConversation} 
-        selectedConversationId={selectedConversationId} 
+        selectedConversationId={selectedConversationId}
+        isCreatingNewConversation={isCreatingConversation}
       />
 
       <div className="flex-1 relative">
@@ -359,12 +443,14 @@ const fetchAndTransformData = (conversationHistory) => {
           onRename={handleRenameConversation}
           userId={user?.uid || ''}
           refreshKey={docRefreshKey}
+          pendingUploadCount={uploadPendingCount}
+          pendingUploadFiles={pendingUploadFiles}
         />
         <MessageInput 
           onSend={handleSend}
-          disabled={isAgentThinking || isLoadingMessages}
+          disabled={isAgentThinking || isLoadingMessages } // ✅ Removed uploadPendingCount > 0 check to allow concurrent/non-blocking use
           sessionId={selectedConversationId} 
-          onUploadComplete={() => setDocRefreshKey(k => k + 1)}
+          onUploadComplete={handleUploadComplete}
         />
       </div>
     </div>

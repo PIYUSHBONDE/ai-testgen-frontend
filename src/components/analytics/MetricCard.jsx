@@ -21,7 +21,7 @@ export default function MetricCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: delay }}
     >
-      <Card className="hover:shadow-xl transition-all duration-300 border-l-4 border-l-primary/20 hover:border-l-primary">
+      <Card className="h-full hover:shadow-xl transition-all duration-300 border-l-4 border-l-primary/20 hover:border-l-primary">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             {title}
@@ -30,22 +30,25 @@ export default function MetricCard({
             <Icon className="h-5 w-5 text-primary" />
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold tracking-tight">
-             {/* Check if value is a number to animate, otherwise just show it */}
-             {typeof value === 'number' ? (
-                <CountUp end={value} duration={2} separator="," />
-             ) : (
-                value
-             )}
+        <CardContent className="flex flex-col justify-between min-h-[110px]">
+          <div>
+            <div className="text-3xl font-bold tracking-tight">
+               {/* Check if value is a number to animate, otherwise just show it */}
+               {typeof value === 'number' ? (
+                  <CountUp end={value} duration={2} separator="," />
+               ) : (
+                  value
+               )}
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <p className="text-xs text-muted-foreground">
+                {description}
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2 mt-2">
-            <p className="text-xs text-muted-foreground">
-              {description}
-            </p>
-          </div>
+
           {trend !== null && (
-            <div className="flex items-center gap-1 mt-2">
+            <div className="flex items-center gap-1 mt-4">
               {trendPositive ? (
                 <TrendingUp className="h-3 w-3 text-green-600" />
               ) : (

@@ -30,6 +30,7 @@ export default function Sidebar({
   onToggle,
   onSelectConversation,
   onNewConversation,
+  isCreatingNewConversation,
   selectedConversationId,
 }: {
   conversations: Conversation[];
@@ -38,6 +39,7 @@ export default function Sidebar({
   onToggle: () => void;
   onSelectConversation: (c: Conversation) => void;
   onNewConversation: () => void;
+  isCreatingNewConversation?: boolean;
   selectedConversationId?: string | null;
 }) {
   const { logout, user } = useAuth();
@@ -154,9 +156,9 @@ export default function Sidebar({
                 // Expanded View
                 <div className="flex-1 flex flex-col overflow-y-auto">
                     <div className="px-3">
-                        <Button onClick={onNewConversation} className="w-full flex items-center justify-center gap-2 bg-emerald-600">
-                            <Plus size={16} />
-                            <span className="text-sm font-semibold">New Chat</span>
+                        <Button onClick={() => { if (!isCreatingNewConversation) onNewConversation(); }} className={`w-full flex items-center justify-center gap-2 ${isCreatingNewConversation ? 'opacity-80 cursor-not-allowed' : 'bg-emerald-600'}`}>
+                          {isCreatingNewConversation ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />}
+                          <span className="text-sm font-semibold">{isCreatingNewConversation ? 'Creating...' : 'New Chat'}</span>
                         </Button>
                         <div className="relative mt-3">
                             <input className="w-full rounded-lg p-2 pl-9 border border-slate-200 dark:border-slate-700 bg-transparent text-sm" placeholder="Search..." />

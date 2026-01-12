@@ -113,8 +113,8 @@ export default function AuthGate() {
           {/* ----- Left Panel (Polished Form) ----- */}
           <div className="w-full md:w-1/2 md:pr-8 md:border-r border-slate-200 dark:border-slate-700">
             <div className="flex gap-2 mb-6 p-1 bg-slate-100 dark:bg-slate-900/40 rounded-full">
-              <button onClick={() => setMode('login')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-300 ${mode === 'login' ? 'bg-white dark:bg-emerald-600 text-slate-800 dark:text-white shadow-sm' : 'bg-transparent text-slate-600 dark:text-slate-300'}`}>Login</button>
-              <button onClick={() => setMode('signup')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-300 ${mode === 'signup' ? 'bg-white dark:bg-emerald-600 text-slate-800 dark:text-white shadow-sm' : 'bg-transparent text-slate-600 dark:text-slate-300'}`}>Sign up</button>
+              <button onClick={() => setMode('login')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-300 ${mode === 'login' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-transparent text-slate-600 dark:text-slate-300'}`}>Login</button>
+              <button onClick={() => setMode('signup')} className={`w-1/2 px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-300 ${mode === 'signup' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-transparent text-slate-600 dark:text-slate-300'}`}>Sign up</button>
             </div>
 
             <form onSubmit={submit} className="flex flex-col gap-4">
@@ -127,7 +127,12 @@ export default function AuthGate() {
               {error && <div className="text-sm text-red-500 text-center">{error}</div>}
               
               <div className="flex items-center gap-3 mt-2">
-                <Button type="submit" className="flex-1 transition-transform duration-200 hover:scale-[1.02]">{mode === 'login' ? 'Sign in' : 'Create account'}</Button>
+                <Button
+                  type="submit"
+                  className={`flex-1 transition-transform duration-200 hover:scale-[1.02] bg-emerald-600 text-white hover:bg-emerald-700 hover:text-white dark:hover:bg-emerald-700`}
+                >
+                  {mode === 'login' ? 'Sign in' : 'Create account'}
+                </Button>
                 <Button type="button" variant="ghost" onClick={() => { setEmail(''); setPassword(''); setName(''); }}>Clear</Button>
               </div>
             </form>

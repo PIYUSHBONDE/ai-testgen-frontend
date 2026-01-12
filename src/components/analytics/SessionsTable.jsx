@@ -136,7 +136,17 @@ export default function SessionsTable({ sessions }) {
                     <ArrowUpDown className="ml-2 h-4 w-4" />
                   </Button>
                 </TableHead>
-                <TableHead>Test Cases</TableHead>
+                <TableHead>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => handleSort('test_case_count')}
+                    className="hover:bg-transparent"
+                  >
+                    Test Cases
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </TableHead>
                 <TableHead>Documents</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>

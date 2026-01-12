@@ -83,7 +83,9 @@ export default function AuthModal({ open, onOpenChange }) {
           {error && <div className="text-sm text-red-600">{error}</div>}
 
           <div className="flex gap-2">
-            <Button type="submit" className="flex-1">{mode === 'login' ? 'Sign in' : 'Create account'}</Button>
+            <Button type="submit" className={`flex-1 bg-emerald-600 text-white hover:bg-emerald-700 hover:text-white dark:hover:bg-emerald-700`}>
+              {mode === 'login' ? 'Sign in' : 'Create account'}
+            </Button>
             <Button type="button" variant="ghost" onClick={() => { setEmail(''); setPassword(''); setName(''); onOpenChange(false) }}>Cancel</Button>
           </div>
         </form>

@@ -1,6 +1,5 @@
 import axios from "axios";
 
-// const API_BASE = "https://fastapi-agent-backend-342811635923.us-east4.run.app";
 const API_BASE = "http://127.0.0.1:8000";
 
 

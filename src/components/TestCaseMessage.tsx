@@ -314,7 +314,7 @@ export default function TestCasesMessage({ testcases, userId, sessionId }: TestC
           steps: stepsPayload,
           expected: expectedPayload
         };
-        delete (apiTestCase as any).stepDetails;
+        // delete (apiTestCase as any).stepDetails;
 
         const responseData = await exportTestCaseToJira(
           userId,

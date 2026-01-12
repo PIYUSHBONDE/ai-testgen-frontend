@@ -278,6 +278,8 @@ export default function ChatPanel({
   onRename,
   userId,
   refreshKey,
+  pendingUploadCount = 0,
+  pendingUploadFiles = [],
 }: {
   conversation: Conversation | null;
   messages: Message[];
@@ -286,6 +288,8 @@ export default function ChatPanel({
   onRename: (sessionId: string, newTitle: string) => Promise<void>;
   userId: string;
   refreshKey: number;
+  pendingUploadCount?: number;
+  pendingUploadFiles?: string[];
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [tempTitle, setTempTitle] = useState(conversation?.title || '');
@@ -516,6 +520,8 @@ export default function ChatPanel({
         isOpen={isDocManagerOpen}
         onClose={() => setIsDocManagerOpen(false)}
         refreshKey={refreshKey}
+        pendingUploadCount={pendingUploadCount}
+        pendingUploadFiles={pendingUploadFiles}
       />
 
     </div>
